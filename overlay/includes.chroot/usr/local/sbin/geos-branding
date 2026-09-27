@@ -1,0 +1,22 @@
+#!/bin/sh
+# Название GeOS в /etc/os-release. Сборщик Debian перезаписывает этот файл
+# в самом конце сборки, поэтому исправляем его при каждой загрузке.
+grep -q '^NAME="GeOS"' /etc/os-release 2>/dev/null && exit 0
+EXTRA=$(grep -E '^(IMAGE_ID|BUILD_ID)=' /etc/os-release 2>/dev/null)
+TMP=$(mktemp)
+cat > "$TMP" << OSR
+PRETTY_NAME="GeOS 1.0 (GeshanOS)"
+NAME="GeOS"
+VERSION="1.0 (GeshanOS)"
+VERSION_ID="13"
+VERSION_CODENAME=trixie
+ID=debian
+LOGO=geos-logo
+HOME_URL="https://github.com/GeshaNYT/geos"
+SUPPORT_URL="https://github.com/GeshaNYT/geos/issues"
+BUG_REPORT_URL="https://github.com/GeshaNYT/geos/issues"
+$EXTRA
+OSR
+rm -f /etc/os-release
+mv "$TMP" /etc/os-release
+chmod 644 /etc/os-release

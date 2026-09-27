@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Запуск Windows-программ
+Exec=wine start /unix %f
+Icon=wine
+MimeType=application/x-ms-dos-executable;application/x-msdownload;application/vnd.microsoft.portable-executable;application/x-msi;application/x-ms-shortcut;
+NoDisplay=true

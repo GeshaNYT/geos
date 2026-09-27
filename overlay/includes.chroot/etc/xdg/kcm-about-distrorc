@@ -1,0 +1,4 @@
+[General]
+LogoPath=/usr/share/pixmaps/geos-logo.png
+Website=https://github.com/GeshaNYT/geos
+UseOSReleaseVersion=true

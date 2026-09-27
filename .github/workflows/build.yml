@@ -24,7 +24,7 @@ jobs:
           sudo docker run --rm --privileged -v "$PWD":/work -w /work debian:trixie bash -c '
             set -e
             apt-get update && apt-get install -y sudo
-            chmod +x build.sh overlay/hooks/live/* overlay/includes.chroot/usr/local/bin/*
+            chmod +x build.sh overlay/hooks/live/* overlay/includes.chroot/usr/local/bin/* overlay/includes.chroot/usr/local/sbin/*
             ./build.sh
           '
 

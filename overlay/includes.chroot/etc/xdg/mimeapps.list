@@ -1,2 +1,6 @@
 [Default Applications]
 application/vnd.android.package-archive=geos-apk.desktop
+application/x-ms-dos-executable=geos-exe.desktop
+application/x-msdownload=geos-exe.desktop
+application/vnd.microsoft.portable-executable=geos-exe.desktop
+application/x-msi=geos-exe.desktop

@@ -1,7 +1,8 @@
 #!/bin/sh
-# Название системы и синяя тема по умолчанию
+# Оформление GeOS
 set -e
-sed -i 's/^PRETTY_NAME=.*/PRETTY_NAME="GeOS (GeshanOS)"/; s/^NAME=.*/NAME="GeOS"/' /usr/lib/os-release
+chmod +x /usr/local/sbin/geos-branding
+systemctl enable geos-branding.service
 echo 'GeOS \n \l' > /etc/issue
 mkdir -p /etc/skel/.config
 cat > /etc/skel/.config/kdeglobals << 'CFG'
@@ -9,3 +10,5 @@ cat > /etc/skel/.config/kdeglobals << 'CFG'
 ColorScheme=GeOSBlue
 AccentColor=37,99,235
 CFG
+# Ускорение: сжатие памяти и защита от зависаний
+systemctl enable zramswap.service earlyoom.service || true

@@ -8,6 +8,10 @@ Linux на базе Debian 13 с синим оформлением. Запуск
 - Android: .apk ставятся двойным кликом через Waydroid.
 - ChromeOS / Fedora: магазин приложений Discover с Flathub.
 - Debian / Linux Mint: стабильная и проверенная база.
+- Windows: .exe запускаются двойным кликом (Wine).
+- Apple AirDrop / Phone Link: связь с телефоном через KDE Connect.
+- Центр GeOS: Steam, Discord, Telegram, Minecraft и другие программы в один клик.
+- Для слабых ПК: сжатие памяти zram, защита от зависаний earlyoom, режимы питания.
 
 ## Как собрать
 Нужен компьютер или виртуалка с Debian 12/13 или Ubuntu 22.04+, 25 ГБ свободного места и интернет.

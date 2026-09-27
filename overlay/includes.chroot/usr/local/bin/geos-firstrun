@@ -1,10 +1,11 @@
 #!/bin/sh
-# Синее оформление при первом входе. Потом всё можно поменять в «Параметрах».
+# Первый вход: синее оформление и Центр GeOS. Потом всё можно поменять в «Параметрах».
 FLAG="$HOME/.config/geos-firstrun-done"
 [ -f "$FLAG" ] && exit 0
 sleep 4
 plasma-apply-colorscheme GeOSBlue
 plasma-apply-wallpaperimage /usr/share/wallpapers/GeOS/geos.png
-notify-send -i dialog-information "Добро пожаловать в GeOS" \
-  "Linux-приложения — в Discover, .apk — открой двойным кликом."
 touch "$FLAG"
+notify-send -i /usr/share/pixmaps/geos-logo.png "Добро пожаловать в GeOS" \
+  "Открываю Центр GeOS: там программы в один клик. .apk и .exe запускаются двойным кликом."
+/usr/local/bin/geos-center &

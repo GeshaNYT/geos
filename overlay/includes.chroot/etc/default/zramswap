@@ -1,0 +1,4 @@
+# GeOS: сжатие оперативной памяти (zram)
+ALGO=zstd
+PERCENT=50
+PRIORITY=100

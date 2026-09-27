@@ -1,0 +1,12 @@
+[Unit]
+Description=GeOS branding
+DefaultDependencies=no
+After=local-fs.target
+Before=sysinit.target display-manager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/geos-branding
+
+[Install]
+WantedBy=sysinit.target
