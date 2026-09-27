@@ -1,0 +1,11 @@
+#!/bin/sh
+# Waydroid — запуск Android-приложений (.apk)
+set -e
+curl -fsSL https://repo.waydro.id/waydroid.gpg -o /usr/share/keyrings/waydroid.gpg
+for dist in trixie bookworm; do
+  echo "deb [signed-by=/usr/share/keyrings/waydroid.gpg] https://repo.waydro.id/ $dist main" \
+    > /etc/apt/sources.list.d/waydroid.list
+  apt-get update && apt-get install -y waydroid && break
+done
+# Flathub — главный магазин Linux-приложений
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo

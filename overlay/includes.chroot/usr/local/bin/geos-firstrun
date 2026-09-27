@@ -1,0 +1,10 @@
+#!/bin/sh
+# Синее оформление при первом входе. Потом всё можно поменять в «Параметрах».
+FLAG="$HOME/.config/geos-firstrun-done"
+[ -f "$FLAG" ] && exit 0
+sleep 4
+plasma-apply-colorscheme GeOSBlue
+plasma-apply-wallpaperimage /usr/share/wallpapers/GeOS/geos.png
+notify-send -i dialog-information "Добро пожаловать в GeOS" \
+  "Linux-приложения — в Discover, .apk — открой двойным кликом."
+touch "$FLAG"

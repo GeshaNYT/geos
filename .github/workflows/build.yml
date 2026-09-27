@@ -1,0 +1,37 @@
+name: Сборка GeOS
+
+on:
+  workflow_dispatch:      # кнопка «Run workflow» во вкладке Actions
+  push:
+    tags: ['v*']          # или автоматически при теге v1.0, v1.1...
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Освободить место на диске
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+                      /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo docker image prune --all --force
+          df -h /
+
+      - name: Собрать ISO внутри Debian
+        run: |
+          sudo docker run --rm --privileged -v "$PWD":/work -w /work debian:trixie bash -c '
+            set -e
+            apt-get update && apt-get install -y sudo
+            chmod +x build.sh overlay/hooks/live/* overlay/includes.chroot/usr/local/bin/*
+            ./build.sh
+          '
+
+      - name: Выложить ISO для скачивания
+        uses: actions/upload-artifact@v4
+        with:
+          name: GeOS-iso
+          path: build/*.iso
+          compression-level: 0
+          retention-days: 7

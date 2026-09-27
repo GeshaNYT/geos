@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=GeOS First Run
+Exec=/usr/local/bin/geos-firstrun
+OnlyShowIn=KDE;
+NoDisplay=true

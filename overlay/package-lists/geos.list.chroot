@@ -1,0 +1,39 @@
+# Рабочий стол KDE Plasma 6 (Wayland) и вход в систему
+kde-plasma-desktop
+sddm
+plasma-nm
+plasma-pa
+# Программы
+dolphin
+konsole
+kate
+ark
+gwenview
+okular
+spectacle
+kcalc
+firefox-esr
+firefox-esr-l10n-ru
+# Магазин приложений + Flatpak (Linux-приложения)
+plasma-discover
+plasma-discover-backend-flatpak
+flatpak
+# Снимки системы (откат, как Time Machine)
+timeshift
+# Установщик на диск
+calamares
+calamares-settings-debian
+# Система, звук, сеть, шрифты
+network-manager
+pipewire-audio
+bluez
+firmware-linux
+fonts-noto
+fonts-noto-color-emoji
+locales
+kdialog
+libnotify-bin
+curl
+ca-certificates
+gnupg
+lxc
