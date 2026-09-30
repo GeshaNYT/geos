@@ -1,0 +1,7 @@
+#!/bin/sh
+# Анимация загрузки GeOS: берём крутилку из стандартной темы и ставим свой логотип
+T=/usr/share/plymouth/themes/geos
+for f in /usr/share/plymouth/themes/spinner/*.png; do
+  [ "$(basename "$f")" = "watermark.png" ] || cp -n "$f" "$T/"
+done
+plymouth-set-default-theme -R geos || echo "ВНИМАНИЕ: тема загрузки не применилась"

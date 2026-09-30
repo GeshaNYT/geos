@@ -1,10 +1,30 @@
 #!/bin/sh
-# Первый вход: синее оформление и Центр GeOS. Потом всё можно поменять в «Параметрах».
+# Первый вход: синее оформление, панель как в Windows 11 и Центр GeOS.
+# Потом всё можно поменять в «Параметрах».
 FLAG="$HOME/.config/geos-firstrun-done"
 [ -f "$FLAG" ] && exit 0
-sleep 4
+sleep 5
 plasma-apply-colorscheme GeOSBlue
 plasma-apply-wallpaperimage /usr/share/wallpapers/GeOS/geos.png
+
+# Плавающая панель по центру с логотипом GeOS вместо значка меню
+dbus-send --session --type=method_call --dest=org.kde.plasmashell /PlasmaShell \
+  org.kde.PlasmaShell.evaluateScript string:'
+var ps = panels();
+for (var i = 0; i < ps.length; i++) {
+  var p = ps[i];
+  if (p.location != "bottom") continue;
+  p.floating = true;
+  p.lengthMode = "fit";
+  p.alignment = "center";
+  p.height = 48;
+  var ws = p.widgets("org.kde.plasma.kickoff");
+  for (var j = 0; j < ws.length; j++) {
+    ws[j].currentConfigGroup = ["General"];
+    ws[j].writeConfig("icon", "/usr/share/pixmaps/geos-logo.png");
+  }
+}'
+
 touch "$FLAG"
 notify-send -i /usr/share/pixmaps/geos-logo.png "Добро пожаловать в GeOS" \
   "Открываю Центр GeOS: там программы в один клик. .apk и .exe запускаются двойным кликом."

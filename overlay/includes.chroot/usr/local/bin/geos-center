@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 # Центр GeOS — программы в один клик и быстрые настройки системы.
+import json
+import os
 import shutil
 import sys
 
-from PyQt6.QtCore import QProcess, Qt
+from PyQt6.QtCore import QProcess, Qt, QUrl
 from PyQt6.QtGui import QIcon, QPixmap
+from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkRequest
 from PyQt6.QtWidgets import (
     QApplication, QFrame, QGridLayout, QHBoxLayout, QLabel, QMessageBox,
     QPushButton, QScrollArea, QTabWidget, QVBoxLayout, QWidget,
@@ -12,6 +15,14 @@ from PyQt6.QtWidgets import (
 
 LOGO = "/usr/share/pixmaps/geos-logo.png"
 FLATHUB = "https://dl.flathub.org/repo/flathub.flatpakrepo"
+FLATHUB_API = "https://flathub.org/api/v2/appstream/"
+CACHE = os.path.expanduser("~/.cache/geos-center/icons")
+# Официальные иконки из каталога Flathub (скачаны при сборке GeOS или при добавлении Flathub)
+LOCAL_ICON_DIRS = [
+    "/var/lib/flatpak/appstream/flathub/x86_64/active/icons/128x128",
+    os.path.expanduser("~/.local/share/flatpak/appstream/flathub/x86_64/active/icons/128x128"),
+    CACHE,
+]
 
 # (эмодзи, название, описание, Flatpak ID)
 APPS = [
@@ -29,16 +40,17 @@ APPS = [
     ("📝", "LibreOffice", "Документы, таблицы, презентации", "org.libreoffice.LibreOffice"),
 ]
 
-# (эмодзи, название, описание, команда)
+# (эмодзи, название, описание, команда, иконка из темы)
 SYSTEM = [
     ("🤖", "Включить Android", "Подготовить запуск .apk (скачает ~1 ГБ)",
-     ["pkexec", "waydroid", "init", "-s", "GAPPS"]),
+     ["konsole", "-e", "/usr/local/bin/geos-android-setup"], "waydroid"),
     ("📱", "Связь с телефоном", "Файлы, уведомления и буфер обмена (KDE Connect)",
-     ["kdeconnect-app"]),
-    ("🪟", "Windows-программы", "Настройки запуска .exe (Wine)", ["winecfg"]),
+     ["kdeconnect-app"], "kdeconnect"),
+    ("🪟", "Windows-программы", "Настройки запуска .exe (Wine)", ["winecfg"], "wine"),
     ("🕒", "Снимки системы", "Откат системы, если что-то сломалось (Timeshift)",
-     ["timeshift-launcher"]),
-    ("🛍️", "Все приложения", "Магазин Discover: тысячи программ", ["plasma-discover"]),
+     ["timeshift-launcher"], "timeshift"),
+    ("🛍️", "Все приложения", "Магазин Discover: тысячи программ", ["plasma-discover"],
+     "plasmadiscover"),
 ]
 
 STYLE = """
@@ -70,17 +82,32 @@ def installed_apps():
     return set(bytes(p.readAllStandardOutput()).decode().split())
 
 
+ICON_SIZE = 48
+
+
+def set_icon(label, pixmap):
+    if pixmap and not pixmap.isNull():
+        label.setPixmap(pixmap.scaled(ICON_SIZE, ICON_SIZE, Qt.AspectRatioMode.KeepAspectRatio,
+                                      Qt.TransformationMode.SmoothTransformation))
+        return True
+    return False
+
+
 def card(emoji, name, desc, button):
+    """Карточка программы. Возвращает (карточка, метка иконки)."""
     frame = QFrame(objectName="card")
     lay = QVBoxLayout(frame)
     lay.setContentsMargins(16, 14, 16, 14)
-    for text, obj in ((emoji, "emoji"), (name, "name"), (desc, "desc")):
+    icon = QLabel(emoji, objectName="emoji")
+    icon.setFixedHeight(ICON_SIZE + 4)
+    lay.addWidget(icon)
+    for text, obj in ((name, "name"), (desc, "desc")):
         lbl = QLabel(text, objectName=obj)
         lbl.setWordWrap(True)
         lay.addWidget(lbl)
     lay.addStretch()
     lay.addWidget(button)
-    return frame
+    return frame, icon
 
 
 class Center(QWidget):
@@ -92,6 +119,9 @@ class Center(QWidget):
         self.queue = []
         self.proc = None
         self.buttons = {}
+        self.icon_labels = {}
+        self.net = QNetworkAccessManager(self)
+        os.makedirs(CACHE, exist_ok=True)
 
         root = QVBoxLayout(self)
         root.setContentsMargins(24, 20, 24, 20)
@@ -133,15 +163,53 @@ class Center(QWidget):
             self.buttons[app_id] = btn
             self.set_state(app_id, "open" if app_id in have else "install")
             btn.clicked.connect(lambda _, a=app_id, n=name: self.app_clicked(a, n))
-            cards.append(card(emoji, name, desc, btn))
+            frame, icon = card(emoji, name, desc, btn)
+            self.icon_labels[app_id] = icon
+            if not self.load_local_icon(app_id):
+                self.fetch_icon(app_id)
+            cards.append(frame)
         return self.grid_page(cards)
+
+    # ---------- настоящие иконки программ ----------
+    def load_local_icon(self, app_id):
+        for d in LOCAL_ICON_DIRS:
+            path = os.path.join(d, app_id + ".png")
+            if os.path.exists(path) and set_icon(self.icon_labels[app_id], QPixmap(path)):
+                return True
+        return False
+
+    def fetch_icon(self, app_id):
+        """Нет иконки на диске — берём адрес официальной иконки из каталога Flathub."""
+        reply = self.net.get(QNetworkRequest(QUrl(FLATHUB_API + app_id)))
+        reply.finished.connect(lambda r=reply, a=app_id: self.got_appstream(r, a))
+
+    def got_appstream(self, reply, app_id):
+        try:
+            data = json.loads(bytes(reply.readAll()).decode())
+            url = data.get("icon") or ""
+        except (ValueError, AttributeError):
+            url = ""
+        reply.deleteLater()
+        if url.startswith("https://"):
+            img = self.net.get(QNetworkRequest(QUrl(url)))
+            img.finished.connect(lambda r=img, a=app_id: self.got_icon(r, a))
+
+    def got_icon(self, reply, app_id):
+        raw = bytes(reply.readAll())
+        reply.deleteLater()
+        pix = QPixmap()
+        if pix.loadFromData(raw) and set_icon(self.icon_labels[app_id], pix):
+            pix.save(os.path.join(CACHE, app_id + ".png"), "PNG")
 
     def system_tab(self):
         cards = []
-        for emoji, name, desc, cmd in SYSTEM:
+        for emoji, name, desc, cmd, theme_icon in SYSTEM:
             btn = QPushButton("Открыть")
             btn.clicked.connect(lambda _, c=cmd: self.run_tool(c))
-            cards.append(card(emoji, name, desc, btn))
+            frame, icon = card(emoji, name, desc, btn)
+            if QIcon.hasThemeIcon(theme_icon):
+                set_icon(icon, QIcon.fromTheme(theme_icon).pixmap(ICON_SIZE, ICON_SIZE))
+            cards.append(frame)
         return self.grid_page(cards)
 
     def set_state(self, app_id, state):

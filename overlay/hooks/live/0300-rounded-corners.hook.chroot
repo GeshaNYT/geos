@@ -1,0 +1,21 @@
+#!/bin/sh
+# Скруглённые углы окон (KDE Rounded Corners). Если сборка эффекта не удастся — ISO всё равно соберётся.
+cat > /tmp/rc.sh << 'SCRIPT'
+set -e
+DEPS="git cmake g++ gettext extra-cmake-modules qt6-base-private-dev qt6-base-dev-tools libkf6configwidgets-dev libkf6kcmutils-dev kwin-dev libdrm-dev"
+# запоминаем, чего не было, чтобы после сборки удалить только это
+NEW=""
+for p in $DEPS; do dpkg -s "$p" >/dev/null 2>&1 || NEW="$NEW $p"; done
+apt-get install -y --no-install-recommends $DEPS
+git clone --depth 1 https://github.com/matinlotfali/KDE-Rounded-Corners /tmp/krc
+cd /tmp/krc
+cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+cmake --build . -j"$(nproc)"
+cmake --install .
+cd /
+rm -rf /tmp/krc
+[ -n "$NEW" ] && apt-get purge -y $NEW
+apt-get autoremove -y --purge
+SCRIPT
+sh /tmp/rc.sh || echo "ВНИМАНИЕ: скруглённые углы не собрались, продолжаю без них"
+rm -f /tmp/rc.sh

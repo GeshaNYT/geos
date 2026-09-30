@@ -18,7 +18,7 @@ lb config \
   --iso-application "GeOS" \
   --iso-volume "GeOS" \
   --image-name "geos" \
-  --bootappend-live "boot=live components quiet splash hostname=geos locales=ru_RU.UTF-8 keyboard-layouts=us,ru keyboard-options=grp:alt_shift_toggle"
+  --bootappend-live "boot=live components quiet splash loglevel=3 hostname=geos locales=ru_RU.UTF-8 keyboard-layouts=us,ru keyboard-options=grp:alt_shift_toggle"
 
 echo "==> Добавляю файлы GeOS"
 cp -r "$HERE/overlay/." config/

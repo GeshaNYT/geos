@@ -9,3 +9,5 @@ for dist in trixie bookworm; do
 done
 # Flathub — главный магазин Linux-приложений
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+# Каталог Flathub с официальными иконками программ — для Центра GeOS (работает и без интернета)
+flatpak update --appstream flathub || echo "ВНИМАНИЕ: каталог Flathub не скачался, иконки загрузятся из интернета"

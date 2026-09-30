@@ -3,6 +3,6 @@ Type=Application
 Name=Центр GeOS
 Comment=Программы в один клик и настройки системы
 Exec=/usr/local/bin/geos-center
-Icon=/usr/share/pixmaps/geos-logo.png
+Icon=geos-logo
 Categories=System;Settings;
 Keywords=apps;install;steam;discord;приложения;установить;

@@ -45,3 +45,6 @@ kdeconnect
 zram-tools
 earlyoom
 power-profiles-daemon
+# Красивая загрузка с логотипом
+plymouth
+plymouth-themes

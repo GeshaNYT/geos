@@ -1,0 +1,8 @@
+[Plugins]
+kwin4_effect_shapecornersEnabled=true
+magiclampEnabled=true
+blurEnabled=true
+
+[Round-Corners]
+Size=12
+InactiveCornerRadius=12
