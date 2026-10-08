@@ -1,0 +1,8 @@
+[General]
+ShowFullPath=false
+RememberOpenedTabs=false
+ShowStatusBar=true
+ConfirmClosingMultipleTabs=false
+
+[PreviewSettings]
+Plugins=appimagethumbnail,audiothumbnail,blenderthumbnail,comicbookthumbnail,djvuthumbnail,ebookthumbnail,exrthumbnail,directorythumbnail,fontthumbnail,imagethumbnail,jpegthumbnail,kraorathumbnail,windowsexethumbnail,windowsimagethumbnail,opendocumentthumbnail,svgthumbnail,ffmpegthumbs,gsthumbnail

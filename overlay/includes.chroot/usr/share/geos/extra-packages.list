@@ -1,0 +1,73 @@
+# Дополнительные пакеты GeOS. Если какого-то пакета нет в Debian, он пропускается,
+# а сборка не падает.
+libkf6config-bin
+# Центр GeOS
+python3-pyqt6
+# Связь с телефоном
+kdeconnect
+# Ускорение слабых ПК: сжатие памяти, защита от зависаний, режимы питания
+zram-tools
+earlyoom
+power-profiles-daemon
+# Красивая загрузка с логотипом
+plymouth
+plymouth-themes
+# Как в Windows: диспетчер задач, сведения о системе, диски, анализ места
+plasma-systemmonitor
+kinfocenter
+partitionmanager
+filelight
+kscreen
+# Миниатюры видео и документов в Проводнике
+ffmpegthumbs
+kdegraphics-thumbnailers
+kio-extras
+# Видео и музыка в любых форматах
+vlc
+gstreamer1.0-plugins-good
+gstreamer1.0-plugins-bad
+gstreamer1.0-plugins-ugly
+gstreamer1.0-libav
+# Архивы: zip, rar, 7z
+7zip
+unrar-free
+# Флешки и диски из Windows
+ntfs-3g
+exfatprogs
+# Общие папки в сети Windows
+kdenetwork-filesharing
+smbclient
+# Принтеры и сканеры
+cups
+print-manager
+printer-driver-gutenprint
+hplip
+skanlite
+# Bluetooth
+bluedevil
+# Защита: брандмауэр с настройками в «Параметрах»
+ufw
+plasma-firewall
+# Обновление прошивок (BIOS, SSD и т. д.) через Discover
+fwupd
+plasma-discover-backend-fwupd
+# Единый вид GTK-программ и системные диалоги для приложений из магазина
+kde-config-gtk-style
+breeze-gtk-theme
+xdg-desktop-portal-kde
+kde-config-sddm
+# Шрифты, совместимые с Windows (Arial, Times, Calibri, Cambria)
+fonts-liberation2
+fonts-crosextra-carlito
+fonts-crosextra-caladea
+# Проверка орфографии на русском
+hunspell-ru
+# Игровой режим (больше FPS)
+gamemode
+xdg-user-dirs
+# SVG-иконки в Центре GeOS
+libqt6svg6
+qt6-svg-plugins
+fonts-inter
+fonts-hack
+kde-cli-tools

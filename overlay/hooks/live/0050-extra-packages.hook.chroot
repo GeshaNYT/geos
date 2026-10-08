@@ -1,0 +1,10 @@
+#!/bin/sh
+# Дополнительные пакеты: ставим всё разом, а если что-то не нашлось — по одному, пропуская отсутствующие.
+LIST=/usr/share/geos/extra-packages.list
+PKGS=$(grep -v '^\s*#' "$LIST" | grep -v '^\s*$' | tr '\n' ' ')
+if ! apt-get install -y $PKGS; then
+  echo "Ставлю пакеты по одному…"
+  for p in $PKGS; do
+    apt-get install -y "$p" || echo "ВНИМАНИЕ: пакет $p не найден, пропускаю"
+  done
+fi

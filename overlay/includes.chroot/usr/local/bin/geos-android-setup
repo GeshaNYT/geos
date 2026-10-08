@@ -1,49 +1,48 @@
 #!/bin/bash
-# Подготовка Android (Waydroid) в GeOS. Запускается в окне терминала, чтобы был виден прогресс.
-ok()   { echo -e "\e[32m✔ $*\e[0m"; }
-info() { echo -e "\e[36m➜ $*\e[0m"; }
-fail() { echo -e "\e[31m✘ $*\e[0m"; echo; read -rp "Нажми Enter, чтобы закрыть…" _; exit 1; }
+# Подготовка Android (Waydroid). Ход работы показывает окно geos-task.
+step() { echo "::step $*"; }
+ok()   { echo "::ok $*"; }
+warn() { echo "::warn $*"; }
+fail() { echo "::fail $*"; exit 1; }
 
-echo -e "\e[1;34m=== Android в GeOS ===\e[0m"
-echo "Нужен интернет. Первый раз скачивается образ Android (~1,5 ГБ)."
-echo
+command -v waydroid >/dev/null || fail "Waydroid не установлен"
 
-command -v waydroid >/dev/null || fail "Waydroid не установлен."
-
+step "Проверяю, скачан ли Android"
 if [ ! -s /var/lib/waydroid/images/system.img ]; then
-  info "Скачиваю и готовлю Android. Прогресс виден ниже, это может занять 5–20 минут…"
-  sudo waydroid init -f -s GAPPS || fail "Не удалось скачать Android. Проверь интернет и запусти ещё раз."
+  ok "Нужно скачать Android (~1,5 ГБ)"
+  step "Скачиваю Android — обычно 5–20 минут"
+  sudo -A waydroid init -f -s GAPPS 2>&1 || fail "Не удалось скачать Android. Проверь интернет и попробуй ещё раз."
   ok "Android скачан"
 else
   ok "Android уже скачан"
 fi
 
-# В виртуалке или без видеоускорения — программная отрисовка, иначе Android не запустится
+# В виртуалке или без видеоускорения Android запускается только с программной отрисовкой
 if systemd-detect-virt -q || [ ! -e /dev/dri/renderD128 ]; then
-  info "Нет аппаратного ускорения графики (виртуалка?) — включаю программную отрисовку"
+  step "Нет ускорения графики — включаю программную отрисовку"
   CFG=/var/lib/waydroid/waydroid.cfg
   if ! grep -q "ro.hardware.egl = swiftshader" "$CFG"; then
-    grep -q "^\[properties\]" "$CFG" || echo "[properties]" | sudo tee -a "$CFG" >/dev/null
-    sudo sed -i '/^\[properties\]/a ro.hardware.gralloc = default\nro.hardware.egl = swiftshader' "$CFG"
-    sudo waydroid upgrade --offline >/dev/null 2>&1
+    grep -q "^\[properties\]" "$CFG" || echo "[properties]" | sudo -A tee -a "$CFG" >/dev/null
+    sudo -A sed -i '/^\[properties\]/a ro.hardware.gralloc = default\nro.hardware.egl = swiftshader' "$CFG"
+    sudo -A waydroid upgrade --offline >/dev/null 2>&1
   fi
-  ok "Программная отрисовка включена (Android будет работать медленнее)"
+  warn "Программная отрисовка включена — Android будет работать медленнее"
 fi
 
-info "Запускаю контейнер Android"
-sudo systemctl enable --now waydroid-container >/dev/null 2>&1 || fail "Не удалось запустить контейнер Android."
+step "Запускаю контейнер Android"
+sudo -A systemctl enable --now waydroid-container >/dev/null 2>&1 || fail "Не удалось запустить контейнер Android"
+ok
 
+step "Запускаю Android (первый раз до 2–3 минут)"
 if ! waydroid status 2>/dev/null | grep -q "RUNNING"; then
-  info "Запускаю Android (первый раз до 2–3 минут)…"
   nohup waydroid session start >/dev/null 2>&1 &
   for _ in $(seq 1 90); do
     waydroid status 2>/dev/null | grep -q "RUNNING" && break
-    sleep 2; echo -n "."
+    sleep 2
   done
-  echo
 fi
-waydroid status 2>/dev/null | grep -q "RUNNING" || fail "Android не запустился. На виртуалке это частая проблема — на настоящем компьютере работает лучше."
+waydroid status 2>/dev/null | grep -q "RUNNING" || \
+  fail "Android не запустился. В виртуалке это частая проблема — на обычном компьютере работает лучше."
+ok "Android запущен"
 
-ok "Android готов! Теперь .apk открываются двойным кликом, а Android-приложения появляются в меню «Пуск»."
-echo
-read -rp "Нажми Enter, чтобы закрыть…" _
+echo "::done Готово! Теперь .apk открываются двойным кликом, а Android-приложения появляются в меню «Пуск»."

@@ -1,19 +1,19 @@
 #!/bin/bash
 # Установка .apk двойным кликом через Waydroid
 APK="$1"
-[ -f "$APK" ] || { kdialog --error "Файл не найден: $APK"; exit 1; }
+NAME=$(basename "$APK")
+[ -f "$APK" ] || { kdialog --title "GeOS" --error "Файл не найден: $APK"; exit 1; }
 
 ready() { [ -s /var/lib/waydroid/images/system.img ] && waydroid status 2>/dev/null | grep -q "RUNNING"; }
 
 if ! ready; then
-  kdialog --title "GeOS" --yesno "Чтобы открыть $(basename "$APK"), нужно подготовить Android.\nСделать это сейчас? Прогресс будет виден в отдельном окне." || exit 0
-  konsole -e /usr/local/bin/geos-android-setup
-  ready || exit 1
+  kdialog --title "GeOS" --yesno "Чтобы открыть $NAME, нужно один раз подготовить Android.\nСделать это сейчас?" || exit 0
+  /usr/local/bin/geos-task android || exit 1
 fi
 
-notify-send -i android "GeOS" "Устанавливаю $(basename "$APK")…"
+notify-send -a "GeOS" -i android "Устанавливаю $NAME…"
 if waydroid app install "$APK"; then
-  notify-send -i android "GeOS" "Готово! $(basename "$APK") появится в меню «Пуск»."
+  notify-send -a "GeOS" -i android "Готово" "$NAME установлено — оно появится в меню «Пуск»."
 else
-  kdialog --error "Не удалось установить $(basename "$APK").\nВозможно, файл повреждён или не подходит для этой версии Android."
+  kdialog --title "GeOS" --error "Не удалось установить $NAME.\nВозможно, файл повреждён или не подходит для этой версии Android."
 fi

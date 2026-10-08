@@ -1,0 +1,35 @@
+#!/bin/sh
+# Установщик GeOS: название, логотип и синие цвета вместо Debian
+set -e
+SRC=/etc/calamares/branding/debian
+DST=/etc/calamares/branding/geos
+if [ -f "$SRC/branding.desc" ]; then
+  rm -rf "$DST"; cp -r "$SRC" "$DST"
+  cp /usr/share/pixmaps/geos-logo.png "$DST/geos-logo.png"
+  D="$DST/branding.desc"
+  sed -i -E \
+    -e 's/^componentName:.*/componentName:  geos/' \
+    -e 's/^(\s*)(productName|shortProductName):.*/\1\2: "GeOS"/' \
+    -e 's/^(\s*)(version|shortVersion):.*/\1\2: "1.0"/' \
+    -e 's/^(\s*)(versionedName|shortVersionedName):.*/\1\2: "GeOS 1.0"/' \
+    -e 's/^(\s*)bootloaderEntryName:.*/\1bootloaderEntryName: "GeOS"/' \
+    -e 's#^(\s*)(productUrl|releaseNotesUrl):.*#\1\2: "https://github.com/GeshaNYT/geos"#' \
+    -e 's#^(\s*)(supportUrl|knownIssuesUrl):.*#\1\2: "https://github.com/GeshaNYT/geos/issues"#' \
+    -e 's/^(\s*)(productLogo|productIcon):.*/\1\2: "geos-logo.png"/' \
+    -e 's/^(\s*)sidebarBackground:.*/\1sidebarBackground: "#0d1b34"/' \
+    -e 's/^(\s*)sidebarText:.*/\1sidebarText: "#e6eefa"/' \
+    -e 's/^(\s*)sidebarTextHighlight:.*/\1sidebarTextHighlight: "#2563eb"/' \
+    "$D"
+  sed -i 's/^branding:.*/branding: geos/' /etc/calamares/settings.conf
+fi
+# Значок установщика
+for f in /usr/share/applications/install-debian.desktop /etc/skel/Desktop/install-debian.desktop; do
+  [ -f "$f" ] || continue
+  sed -i -E 's/^(Name|GenericName)(\[[^]]*\])?=.*/\1\2=Установить GeOS/; s/^Icon=.*/Icon=geos-logo/' "$f"
+done
+
+# Своё слайд-шоу во время установки (строки import берём из Debian — они точно совместимы)
+if [ -f "$DST/show.qml" ]; then
+  IMPORTS=$(grep '^import' "$DST/show.qml" || true)
+  { echo "$IMPORTS"; cat /usr/share/geos/installer-slides.qml; } > "$DST/show.qml"
+fi

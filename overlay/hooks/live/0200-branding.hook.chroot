@@ -12,3 +12,20 @@ AccentColor=37,99,235
 CFG
 # Ускорение: сжатие памяти и защита от зависаний
 systemctl enable zramswap.service earlyoom.service || true
+# Экран входа: обои GeOS и в теме Debian, если она осталась включённой
+for t in /usr/share/sddm/themes/debian-breeze /usr/share/sddm/themes/breeze; do
+  [ -d "$t" ] && printf '[General]\nbackground=/usr/share/wallpapers/GeOS/contents/images/3840x2160.png\ntype=image\n' > "$t/theme.conf.user"
+done
+# Обои GeOS по умолчанию для всей системы (Plasma берёт их, если пользователь ничего не выбрал)
+for d in /usr/share/plasma/look-and-feel/org.kde.breeze.desktop /usr/share/plasma/look-and-feel/org.kde.breezedark.desktop; do
+  f="$d/contents/defaults"
+  [ -f "$f" ] || continue
+  if grep -q '^\[Wallpaper\]' "$f"; then
+    sed -i '/^\[Wallpaper\]/,/^\[/{s#^Image=.*#Image=GeOS#}' "$f"
+  else
+    printf '\n[Wallpaper]\nImage=GeOS\n' >> "$f"
+  fi
+done
+# Значки Breeze Dark к тёмной теме и современный шрифт
+sed -i '/^\[General\]/a font=Inter,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\nmenuFont=Inter,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\ntoolBarFont=Inter,9,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\nsmallestReadableFont=Inter,8,-1,5,400,0,0,0,0,0,0,0,0,0,0,1' /etc/skel/.config/kdeglobals
+printf '\n[Icons]\nTheme=breeze-dark\n\n[KDE]\nwidgetStyle=Breeze\n' >> /etc/skel/.config/kdeglobals

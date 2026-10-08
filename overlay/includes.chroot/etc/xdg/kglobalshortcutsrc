@@ -1,0 +1,18 @@
+# Клавиши как в Windows. Стандартные клавиши KDE тоже продолжают работать.
+[services][org.kde.spectacle.desktop]
+RectangularRegionScreenShot=Meta+Shift+S\tMeta+Shift+Print
+
+[services][org.kde.plasma-systemmonitor.desktop]
+_launch=Ctrl+Shift+Esc\tCtrl+Esc
+
+[services][systemsettings.desktop]
+_launch=Meta+I
+
+[services][org.kde.krunner.desktop]
+_launch=Alt+Space\tMeta+R\tAlt+F2\tSearch
+
+[services][org.kde.dolphin.desktop]
+_launch=Meta+E
+
+[KDE Keyboard Layout Switcher]
+Switch to Next Keyboard Layout=Meta+Space\tMeta+Alt+K,Meta+Alt+K,Switch to Next Keyboard Layout

@@ -1,9 +1,10 @@
 #!/bin/sh
-# Название GeOS в /etc/os-release. Сборщик Debian перезаписывает этот файл
-# в самом конце сборки, поэтому исправляем его при каждой загрузке.
-grep -q '^NAME="GeOS"' /etc/os-release 2>/dev/null && exit 0
-EXTRA=$(grep -E '^(IMAGE_ID|BUILD_ID)=' /etc/os-release 2>/dev/null)
-TMP=$(mktemp)
+# Название GeOS в os-release. Сборщик Debian и обновления base-files перезаписывают
+# этот файл, поэтому исправляем его при каждой загрузке.
+grep -q '^NAME="GeOS"' /usr/lib/os-release 2>/dev/null && \
+  grep -q '^NAME="GeOS"' /etc/os-release 2>/dev/null && exit 0
+EXTRA=$(grep -hE '^(IMAGE_ID|BUILD_ID)=' /etc/os-release /usr/lib/os-release 2>/dev/null | sort -u)
+TMP=/usr/lib/os-release.geos
 cat > "$TMP" << OSR
 PRETTY_NAME="GeOS 1.0 (GeshanOS)"
 NAME="GeOS"
@@ -17,6 +18,7 @@ SUPPORT_URL="https://github.com/GeshaNYT/geos/issues"
 BUG_REPORT_URL="https://github.com/GeshaNYT/geos/issues"
 $EXTRA
 OSR
+chmod 644 "$TMP"
+mv -f "$TMP" /usr/lib/os-release
 rm -f /etc/os-release
-mv "$TMP" /etc/os-release
-chmod 644 /etc/os-release
+ln -s ../usr/lib/os-release /etc/os-release

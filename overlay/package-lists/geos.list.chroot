@@ -37,14 +37,3 @@ curl
 ca-certificates
 gnupg
 lxc
-# Центр GeOS
-python3-pyqt6
-# Связь с телефоном
-kdeconnect
-# Ускорение слабых ПК: сжатие памяти, защита от зависаний, режимы питания
-zram-tools
-earlyoom
-power-profiles-daemon
-# Красивая загрузка с логотипом
-plymouth
-plymouth-themes

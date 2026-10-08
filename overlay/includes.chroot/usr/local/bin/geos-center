@@ -2,6 +2,7 @@
 # Центр GeOS — программы в один клик и быстрые настройки системы.
 import json
 import os
+import re
 import shutil
 import sys
 
@@ -9,11 +10,13 @@ from PyQt6.QtCore import QProcess, Qt, QUrl
 from PyQt6.QtGui import QIcon, QPixmap
 from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkRequest
 from PyQt6.QtWidgets import (
-    QApplication, QFrame, QGridLayout, QHBoxLayout, QLabel, QMessageBox,
-    QPushButton, QScrollArea, QTabWidget, QVBoxLayout, QWidget,
+    QApplication, QButtonGroup, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
+    QMessageBox, QPushButton, QScrollArea, QTabWidget, QVBoxLayout, QWidget,
 )
 
-LOGO = "/usr/share/pixmaps/geos-logo.png"
+import geos_ui as ui
+
+LOGO = ui.LOGO
 FLATHUB = "https://dl.flathub.org/repo/flathub.flatpakrepo"
 FLATHUB_API = "https://flathub.org/api/v2/appstream/"
 CACHE = os.path.expanduser("~/.cache/geos-center/icons")
@@ -23,54 +26,103 @@ LOCAL_ICON_DIRS = [
     os.path.expanduser("~/.local/share/flatpak/appstream/flathub/x86_64/active/icons/128x128"),
     CACHE,
 ]
+ICON_SIZE = 48
+COLUMNS = 3
 
-# (эмодзи, название, описание, Flatpak ID)
+# (категория, название, описание, Flatpak ID)
 APPS = [
-    ("🎮", "Steam", "Игры, в том числе для Windows", "com.valvesoftware.Steam"),
-    ("⛏️", "Prism Launcher", "Minecraft с модами: Fabric, NeoForge", "org.prismlauncher.PrismLauncher"),
-    ("💬", "Discord", "Голосовой чат и сообщества", "com.discordapp.Discord"),
-    ("✈️", "Telegram", "Мессенджер", "org.telegram.desktop"),
-    ("🌐", "Google Chrome", "Браузер от Google", "com.google.Chrome"),
-    ("🧑‍💻", "VS Code", "Редактор кода", "com.visualstudio.code"),
-    ("🎥", "OBS Studio", "Запись экрана и стримы", "com.obsproject.Studio"),
-    ("🎵", "Spotify", "Музыка", "com.spotify.Client"),
-    ("🎬", "VLC", "Видеоплеер для любых форматов", "org.videolan.VLC"),
-    ("🎨", "GIMP", "Редактор изображений", "org.gimp.GIMP"),
-    ("🍷", "Bottles", "Удобный запуск Windows-программ", "com.usebottles.bottles"),
-    ("📝", "LibreOffice", "Документы, таблицы, презентации", "org.libreoffice.LibreOffice"),
+    ("Игры", "Steam", "Тысячи игр, в том числе для Windows", "com.valvesoftware.Steam"),
+    ("Игры", "Prism Launcher", "Minecraft с модами: Fabric, NeoForge", "org.prismlauncher.PrismLauncher"),
+    ("Игры", "Heroic", "Игры из Epic Games и GOG", "com.heroicgameslauncher.hgl"),
+    ("Общение", "Discord", "Голосовой чат и сообщества", "com.discordapp.Discord"),
+    ("Общение", "Telegram", "Мессенджер", "org.telegram.desktop"),
+    ("Общение", "Zoom", "Видеозвонки и конференции", "us.zoom.Zoom"),
+    ("Общение", "Thunderbird", "Почта и календарь", "org.mozilla.Thunderbird"),
+    ("Интернет", "Google Chrome", "Браузер от Google", "com.google.Chrome"),
+    ("Интернет", "Brave", "Быстрый браузер с блокировкой рекламы", "com.brave.Browser"),
+    ("Интернет", "qBittorrent", "Скачивание торрентов", "org.qbittorrent.qBittorrent"),
+    ("Интернет", "AnyDesk", "Удалённый доступ к компьютеру", "com.anydesk.Anydesk"),
+    ("Офис", "OnlyOffice", "Документы как в Microsoft Office", "org.onlyoffice.desktopeditors"),
+    ("Офис", "LibreOffice", "Документы, таблицы, презентации", "org.libreoffice.LibreOffice"),
+    ("Творчество", "GIMP", "Редактор изображений, как Photoshop", "org.gimp.GIMP"),
+    ("Творчество", "Krita", "Цифровое рисование", "org.kde.krita"),
+    ("Творчество", "Kdenlive", "Монтаж видео", "org.kde.kdenlive"),
+    ("Творчество", "Blender", "3D-моделирование и анимация", "org.blender.Blender"),
+    ("Творчество", "OBS Studio", "Запись экрана и стримы", "com.obsproject.Studio"),
+    ("Мультимедиа", "Spotify", "Музыка", "com.spotify.Client"),
+    ("Мультимедиа", "VLC", "Видеоплеер для любых форматов", "org.videolan.VLC"),
+    ("Разработка", "VS Code", "Редактор кода", "com.visualstudio.code"),
+    ("Разработка", "Godot", "Движок для создания игр", "org.godotengine.Godot"),
+    ("Утилиты", "Bottles", "Удобный запуск Windows-программ", "com.usebottles.bottles"),
+    ("Утилиты", "Impression", "Запись ISO-образов на флешку", "io.gitlab.adhami3310.Impression"),
 ]
+# Своя иконка категории — пока не загрузилась настоящая иконка программы
+CATEGORY_ICONS = {"Игры": "games", "Общение": "chat", "Интернет": "internet", "Офис": "office",
+                  "Творчество": "creative", "Мультимедиа": "media", "Разработка": "dev", "Утилиты": "utils"}
+CATEGORIES = ["Все"] + sorted({a[0] for a in APPS}, key=[a[0] for a in APPS].index)
 
-# (эмодзи, название, описание, команда, иконка из темы)
+# (иконка, название, описание, команда)
 SYSTEM = [
-    ("🤖", "Включить Android", "Подготовить запуск .apk (скачает ~1 ГБ)",
-     ["konsole", "-e", "/usr/local/bin/geos-android-setup"], "waydroid"),
-    ("📱", "Связь с телефоном", "Файлы, уведомления и буфер обмена (KDE Connect)",
-     ["kdeconnect-app"], "kdeconnect"),
-    ("🪟", "Windows-программы", "Настройки запуска .exe (Wine)", ["winecfg"], "wine"),
-    ("🕒", "Снимки системы", "Откат системы, если что-то сломалось (Timeshift)",
-     ["timeshift-launcher"], "timeshift"),
-    ("🛍️", "Все приложения", "Магазин Discover: тысячи программ", ["plasma-discover"],
-     "plasmadiscover"),
+    ("update", "Обновления", "Обновить систему и программы", ["plasma-discover", "--mode", "update"]),
+    ("cleanup", "Очистка диска", "Удалить мусор и освободить место", ["geos-task", "cleanup"]),
+    ("taskmgr", "Диспетчер задач", "Процессы и нагрузка (Ctrl+Shift+Esc)", ["plasma-systemmonitor"]),
+    ("android", "Включить Android", "Подготовить запуск .apk (скачает ~1,5 ГБ)",
+     ["geos-task", "android"]),
+    ("exe", "Windows-программы", "Настройки запуска .exe (Wine)", ["winecfg"]),
+    ("phone", "Связь с телефоном", "Файлы, уведомления и буфер обмена", ["kdeconnect-app"]),
+    ("snapshot", "Снимки системы", "Откат системы, если что-то сломалось", ["timeshift-launcher"]),
+    ("printer", "Принтеры", "Подключить принтер или сканер", ["systemsettings", "kcm_printer_manager"]),
+    ("shield", "Брандмауэр", "Защита от входящих подключений", ["systemsettings", "kcm_firewall"]),
+    ("disk", "Диски", "Разделы и форматирование", ["partitionmanager"]),
+    ("settings", "Параметры", "Все настройки системы (Win+I)", ["systemsettings"]),
+    ("store", "Все приложения", "Магазин Discover: тысячи программ", ["plasma-discover"]),
 ]
 
-STYLE = """
-QWidget { background: #0d1b34; color: #e6eefa; font-size: 14px; }
-QTabWidget::pane { border: none; }
-QTabBar::tab { background: #12264a; padding: 8px 18px; border-radius: 8px; margin: 4px; }
-QTabBar::tab:selected { background: #2563eb; }
-QFrame#card { background: #13284f; border-radius: 14px; }
-QLabel#emoji { font-size: 32px; background: transparent; }
-QLabel#name { font-size: 16px; font-weight: bold; background: transparent; }
-QLabel#desc { color: #96aac8; background: transparent; }
-QLabel#title { font-size: 26px; font-weight: bold; }
-QLabel#subtitle { color: #96aac8; }
-QPushButton { background: #2563eb; border: none; border-radius: 8px; padding: 7px 14px; font-weight: bold; }
-QPushButton:hover { background: #3b82f6; }
-QPushButton:disabled { background: #1e3a6e; color: #96aac8; }
-QPushButton#open { background: #16a34a; }
-QPushButton#open:hover { background: #22c55e; }
-QScrollArea { border: none; }
-"""
+
+
+SHORTCUTS = [
+    ("Win", "Меню «Пуск» и поиск"), ("Win+E", "Проводник"),
+    ("Win+I", "Параметры"), ("Win+V", "История буфера обмена"),
+    ("Win+Shift+S", "Снимок области экрана"), ("Win+.", "Эмодзи"),
+    ("Win+Space", "Сменить раскладку"), ("Ctrl+Shift+Esc", "Диспетчер задач"),
+    ("Win+← / →", "Окно на половину экрана"), ("Win+D", "Показать рабочий стол"),
+]
+
+
+def is_live():
+    try:
+        return "boot=live" in open("/proc/cmdline").read()
+    except OSError:
+        return False
+
+
+def user_name():
+    import pwd
+    try:
+        full = pwd.getpwuid(os.getuid()).pw_gecos.split(",")[0].strip()
+    except KeyError:
+        full = ""
+    return full or os.environ.get("USER", "друг")
+
+
+def system_summary():
+    parts = []
+    try:
+        cpu = next(l.split(":", 1)[1].strip() for l in open("/proc/cpuinfo") if l.startswith("model name"))
+        parts.append(re.sub(r"\s+", " ", cpu.replace("(R)", "").replace("(TM)", "")))
+    except (OSError, StopIteration):
+        pass
+    try:
+        kb = int(next(l.split()[1] for l in open("/proc/meminfo") if l.startswith("MemTotal")))
+        parts.append(f"{kb / 1048576:.0f} ГБ памяти")
+    except (OSError, StopIteration, ValueError):
+        pass
+    try:
+        st = os.statvfs(os.path.expanduser("~"))
+        parts.append(f"{st.f_bavail * st.f_frsize / 1024**3:.0f} ГБ свободно")
+    except OSError:
+        pass
+    return "GeOS 1.0  ·  " + "  ·  ".join(parts)
 
 
 def installed_apps():
@@ -82,9 +134,6 @@ def installed_apps():
     return set(bytes(p.readAllStandardOutput()).decode().split())
 
 
-ICON_SIZE = 48
-
-
 def set_icon(label, pixmap):
     if pixmap and not pixmap.isNull():
         label.setPixmap(pixmap.scaled(ICON_SIZE, ICON_SIZE, Qt.AspectRatioMode.KeepAspectRatio,
@@ -93,21 +142,38 @@ def set_icon(label, pixmap):
     return False
 
 
-def card(emoji, name, desc, button):
+def svg_icon(name):
+    return ui.pixmap(name, ICON_SIZE * 2)
+
+
+def card(icon_name, name, desc, *buttons):
     """Карточка программы. Возвращает (карточка, метка иконки)."""
     frame = QFrame(objectName="card")
+    frame.setMinimumWidth(260)
+    frame.setFixedHeight(200)
     lay = QVBoxLayout(frame)
     lay.setContentsMargins(16, 14, 16, 14)
-    icon = QLabel(emoji, objectName="emoji")
+    icon = QLabel(objectName="emoji")
     icon.setFixedHeight(ICON_SIZE + 4)
+    set_icon(icon, svg_icon(icon_name))
     lay.addWidget(icon)
     for text, obj in ((name, "name"), (desc, "desc")):
         lbl = QLabel(text, objectName=obj)
         lbl.setWordWrap(True)
         lay.addWidget(lbl)
     lay.addStretch()
-    lay.addWidget(button)
+    row = QHBoxLayout()
+    for i, b in enumerate(buttons):
+        row.addWidget(b, 1 if i == 0 else 0)
+    lay.addLayout(row)
     return frame, icon
+
+
+def scroll(widget):
+    s = QScrollArea()
+    s.setWidgetResizable(True)
+    s.setWidget(widget)
+    return s
 
 
 class Center(QWidget):
@@ -115,60 +181,137 @@ class Center(QWidget):
         super().__init__()
         self.setWindowTitle("Центр GeOS")
         self.setWindowIcon(QIcon(LOGO))
-        self.resize(980, 680)
+        self.resize(1000, 720)
         self.queue = []
         self.proc = None
-        self.buttons = {}
-        self.icon_labels = {}
+        self.buttons, self.removers, self.icon_labels, self.cards = {}, {}, {}, []
+        self.category = "Все"
         self.net = QNetworkAccessManager(self)
         os.makedirs(CACHE, exist_ok=True)
 
         root = QVBoxLayout(self)
         root.setContentsMargins(24, 20, 24, 20)
 
-        head = QHBoxLayout()
-        logo = QLabel()
-        logo.setPixmap(QPixmap(LOGO).scaled(64, 64, Qt.AspectRatioMode.KeepAspectRatio,
-                                            Qt.TransformationMode.SmoothTransformation))
-        head.addWidget(logo)
-        texts = QVBoxLayout()
-        texts.addWidget(QLabel("Центр GeOS", objectName="title"))
-        self.status = QLabel("Программы в один клик — без терминала", objectName="subtitle")
-        texts.addWidget(self.status)
-        head.addLayout(texts)
-        head.addStretch()
+        head, self.status = ui.header("logo", "Центр GeOS", "Программы в один клик — без терминала")
         root.addLayout(head)
 
         tabs = QTabWidget()
+        self.tabs = tabs
+        tabs.addTab(self.home_tab(), "Главная")
         tabs.addTab(self.apps_tab(), "Приложения")
         tabs.addTab(self.system_tab(), "Система")
         root.addWidget(tabs)
 
-    def grid_page(self, cards):
+    # ---------- вкладка «Главная» ----------
+    def home_tab(self):
         page = QWidget()
-        grid = QGridLayout(page)
-        grid.setSpacing(14)
-        for i, c in enumerate(cards):
-            grid.addWidget(c, i // 3, i % 3)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setWidget(page)
-        return scroll
+        lay = QVBoxLayout(page)
+        lay.setContentsMargins(4, 12, 4, 4)
+        lay.setSpacing(16)
 
+        hello = QLabel(f"Привет, {user_name()}!", objectName="big")
+        lay.addWidget(hello)
+        lay.addWidget(QLabel(system_summary(), objectName="desc"))
+
+        quick = QGridLayout()
+        quick.setSpacing(14)
+        actions = [
+            ("store", "Установить программы", "Steam, Discord, Telegram и ещё 20+", lambda: self.tabs.setCurrentIndex(1)),
+            ("android", "Android-приложения", "Открывай .apk двойным кликом", lambda: self.run_tool(["geos-task", "android"])),
+            ("phone", "Связь с телефоном", "Файлы и уведомления с телефона", lambda: self.run_tool(["kdeconnect-app"])),
+            ("update", "Обновления", "Свежие версии системы и программ",
+             lambda: self.run_tool(["plasma-discover", "--mode", "update"])),
+        ]
+        installer = "/usr/share/applications/install-debian.desktop"
+        if is_live() and os.path.exists(installer):
+            actions.insert(0, ("disk", "Установить GeOS", "Поставить систему на этот компьютер",
+                               lambda: self.run_tool(["kioclient", "exec", installer])))
+        cols = 2 if len(actions) == 4 else 3
+        for i, (icon, name, desc, fn) in enumerate(actions[:6]):
+            btn = QPushButton("Открыть")
+            btn.clicked.connect(fn)
+            frame, _ = card(icon, name, desc, btn)
+            frame.setFixedHeight(170)
+            quick.addWidget(frame, i // cols, i % cols)
+        lay.addLayout(quick)
+
+        lay.addWidget(QLabel("Полезные клавиши", objectName="name"))
+        keys = QGridLayout()
+        keys.setHorizontalSpacing(18)
+        keys.setVerticalSpacing(8)
+        keys.setColumnStretch(1, 1)
+        keys.setColumnStretch(3, 1)
+        for i, (k, what) in enumerate(SHORTCUTS):
+            kl = QLabel(f"<b>{k}</b>")
+            kl.setStyleSheet(f"color: {ui.ACCENT_HI}; background: transparent;")
+            keys.addWidget(kl, i // 2, (i % 2) * 2)
+            keys.addWidget(QLabel(what, objectName="desc"), i // 2, (i % 2) * 2 + 1)
+        lay.addLayout(keys)
+        lay.addStretch()
+        return scroll(page)
+
+    # ---------- вкладка «Приложения» ----------
     def apps_tab(self):
+        page = QWidget()
+        lay = QVBoxLayout(page)
+        lay.setContentsMargins(0, 8, 0, 0)
+
+        self.search = QLineEdit(placeholderText="Поиск программы…")
+        self.search.textChanged.connect(self.refilter)
+        lay.addWidget(self.search)
+
+        chips = QHBoxLayout()
+        group = QButtonGroup(self)
+        for cat in CATEGORIES:
+            b = QPushButton(cat, objectName="chip", checkable=True)
+            b.setChecked(cat == "Все")
+            b.clicked.connect(lambda _, c=cat: self.set_category(c))
+            group.addButton(b)
+            chips.addWidget(b)
+        chips.addStretch()
+        lay.addLayout(chips)
+
         have = installed_apps()
-        cards = []
-        for emoji, name, desc, app_id in APPS:
+        for cat, name, desc, app_id in APPS:
             btn = QPushButton()
-            self.buttons[app_id] = btn
-            self.set_state(app_id, "open" if app_id in have else "install")
+            rm = QPushButton("Удалить", objectName="remove")
+            rm.setToolTip("Удалить программу")
+            self.buttons[app_id], self.removers[app_id] = btn, rm
             btn.clicked.connect(lambda _, a=app_id, n=name: self.app_clicked(a, n))
-            frame, icon = card(emoji, name, desc, btn)
+            rm.clicked.connect(lambda _, a=app_id, n=name: self.remove_app(a, n))
+            frame, icon = card(CATEGORY_ICONS.get(cat, "store"), name, desc, btn, rm)
             self.icon_labels[app_id] = icon
+            self.set_state(app_id, "open" if app_id in have else "install")
             if not self.load_local_icon(app_id):
                 self.fetch_icon(app_id)
-            cards.append(frame)
-        return self.grid_page(cards)
+            self.cards.append((cat, f"{name} {desc}".lower(), frame))
+
+        self.grid_host = QWidget()
+        self.grid = QGridLayout(self.grid_host)
+        self.grid.setSpacing(14)
+        self.grid.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.empty = QLabel("Ничего не нашлось. Попробуй поискать в магазине Discover.", objectName="desc")
+        lay.addWidget(scroll(self.grid_host))
+        self.refilter()
+        return page
+
+    def set_category(self, cat):
+        self.category = cat
+        self.refilter()
+
+    def refilter(self):
+        text = self.search.text().strip().lower()
+        while self.grid.count():
+            self.grid.takeAt(0).widget().setParent(None)
+        shown = 0
+        for cat, haystack, frame in self.cards:
+            if (self.category in ("Все", cat)) and (not text or text in haystack):
+                self.grid.addWidget(frame, shown // COLUMNS, shown % COLUMNS)
+                frame.show()
+                shown += 1
+        if not shown:
+            self.grid.addWidget(self.empty, 0, 0, 1, COLUMNS)
+            self.empty.show()
 
     # ---------- настоящие иконки программ ----------
     def load_local_icon(self, app_id):
@@ -185,8 +328,7 @@ class Center(QWidget):
 
     def got_appstream(self, reply, app_id):
         try:
-            data = json.loads(bytes(reply.readAll()).decode())
-            url = data.get("icon") or ""
+            url = json.loads(bytes(reply.readAll()).decode()).get("icon") or ""
         except (ValueError, AttributeError):
             url = ""
         reply.deleteLater()
@@ -201,59 +343,80 @@ class Center(QWidget):
         if pix.loadFromData(raw) and set_icon(self.icon_labels[app_id], pix):
             pix.save(os.path.join(CACHE, app_id + ".png"), "PNG")
 
-    def system_tab(self):
-        cards = []
-        for emoji, name, desc, cmd, theme_icon in SYSTEM:
-            btn = QPushButton("Открыть")
-            btn.clicked.connect(lambda _, c=cmd: self.run_tool(c))
-            frame, icon = card(emoji, name, desc, btn)
-            if QIcon.hasThemeIcon(theme_icon):
-                set_icon(icon, QIcon.fromTheme(theme_icon).pixmap(ICON_SIZE, ICON_SIZE))
-            cards.append(frame)
-        return self.grid_page(cards)
-
+    # ---------- установка и удаление ----------
     def set_state(self, app_id, state):
         btn = self.buttons[app_id]
         btn.setObjectName("open" if state == "open" else "")
-        btn.setText({"install": "Установить", "queued": "В очереди…",
-                     "busy": "Установка…", "open": "Открыть"}[state])
+        btn.setText({"install": "Установить", "queued": "В очереди…", "busy": "Установка…",
+                     "removing": "Удаление…", "open": "Открыть"}[state])
         btn.setEnabled(state in ("install", "open"))
         btn.setProperty("state", state)
         btn.style().unpolish(btn)
         btn.style().polish(btn)
+        self.removers[app_id].setVisible(state == "open")
 
     def app_clicked(self, app_id, name):
         if self.buttons[app_id].property("state") == "open":
             QProcess.startDetached("flatpak", ["run", app_id])
             return
-        self.queue.append((app_id, name))
+        self.queue.append(("install", app_id, name))
         self.set_state(app_id, "queued")
-        self.next_install()
+        self.next_job()
 
-    def next_install(self):
+    def remove_app(self, app_id, name):
+        if QMessageBox.question(self, "Центр GeOS", f"Удалить {name}?") != QMessageBox.StandardButton.Yes:
+            return
+        self.queue.append(("remove", app_id, name))
+        self.set_state(app_id, "queued")
+        self.next_job()
+
+    def next_job(self):
         if self.proc or not self.queue:
             return
-        app_id, name = self.queue.pop(0)
-        self.set_state(app_id, "busy")
-        self.status.setText(f"Устанавливаю {name}… Это может занять несколько минут.")
+        action, app_id, name = self.queue.pop(0)
+        if action == "install":
+            self.set_state(app_id, "busy")
+            self.status.setText(f"Устанавливаю {name}… Это может занять несколько минут.")
+            script = (f"flatpak remote-add --user --if-not-exists flathub {FLATHUB} && "
+                      f"flatpak install --user -y --noninteractive flathub {app_id} && "
+                      "(flatpak install --user -y --noninteractive flathub org.gtk.Gtk3theme.Breeze || true)")
+        else:
+            self.set_state(app_id, "removing")
+            self.status.setText(f"Удаляю {name}…")
+            script = (f"flatpak uninstall --user -y --noninteractive {app_id} || "
+                      f"pkexec flatpak uninstall --system -y --noninteractive {app_id}")
         self.proc = QProcess(self)
-        script = (f"flatpak remote-add --user --if-not-exists flathub {FLATHUB} && "
-                  f"flatpak install --user -y --noninteractive flathub {app_id}")
-        self.proc.finished.connect(lambda code, _s, a=app_id, n=name: self.install_done(a, n, code))
+        self.proc.finished.connect(lambda code, _s, ac=action, a=app_id, n=name: self.job_done(ac, a, n, code))
         self.proc.start("sh", ["-c", script])
 
-    def install_done(self, app_id, name, code):
+    def job_done(self, action, app_id, name, code):
         err = bytes(self.proc.readAllStandardError()).decode().strip()
         self.proc = None
-        if code == 0:
-            self.set_state(app_id, "open")
-            self.status.setText(f"{name} установлен ✔")
+        ok = code == 0
+        if action == "install":
+            self.set_state(app_id, "open" if ok else "install")
+            self.status.setText(f"{name} установлен ✔ Он также появился в меню «Пуск»." if ok
+                                else f"Не удалось установить {name}")
         else:
-            self.set_state(app_id, "install")
-            self.status.setText(f"Не удалось установить {name}")
-            QMessageBox.warning(self, "Ошибка", f"{name} не установился.\n"
+            self.set_state(app_id, "install" if ok else "open")
+            self.status.setText(f"{name} удалён" if ok else f"Не удалось удалить {name}")
+        if not ok:
+            QMessageBox.warning(self, "Ошибка", f"Не получилось: {name}.\n"
                                 "Проверь интернет и попробуй ещё раз.\n\n" + err[-400:])
-        self.next_install()
+        self.next_job()
+
+    # ---------- вкладка «Система» ----------
+    def system_tab(self):
+        page = QWidget()
+        grid = QGridLayout(page)
+        grid.setSpacing(14)
+        grid.setAlignment(Qt.AlignmentFlag.AlignTop)
+        for i, (icon_name, name, desc, cmd) in enumerate(SYSTEM):
+            btn = QPushButton("Открыть")
+            btn.clicked.connect(lambda _, c=cmd: self.run_tool(c))
+            frame, _ = card(icon_name, name, desc, btn)
+            grid.addWidget(frame, i // COLUMNS, i % COLUMNS)
+        return scroll(page)
 
     def run_tool(self, cmd):
         if not shutil.which(cmd[0]):
@@ -264,8 +427,7 @@ class Center(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setDesktopFileName("geos-center")
-    app.setStyleSheet(STYLE)
+    ui.apply(app, "geos-center")
     w = Center()
     w.show()
     sys.exit(app.exec())

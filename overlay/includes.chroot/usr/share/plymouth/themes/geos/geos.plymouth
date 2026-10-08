@@ -17,5 +17,5 @@ WatermarkHorizontalAlignment=.5
 WatermarkVerticalAlignment=.45
 Transition=none
 TransitionDuration=0.0
-BackgroundStartColor=0x0d1b34
+BackgroundStartColor=0x07112a
 BackgroundEndColor=0x0d1b34

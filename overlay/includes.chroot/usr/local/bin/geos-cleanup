@@ -1,0 +1,29 @@
+#!/bin/bash
+# Очистка диска GeOS — как «Очистка диска» в Windows. Ход работы показывает окно geos-task.
+step() { echo "::step $*"; }
+ok()   { echo "::ok $*"; }
+free_mb() { df -m --output=avail / | tail -1 | tr -d ' '; }
+BEFORE=$(free_mb)
+
+step "Кэш загруженных обновлений";    sudo -A apt-get clean; ok
+step "Ненужные системные пакеты";      sudo -A apt-get autoremove -y --purge; ok
+step "Неиспользуемые компоненты приложений"
+flatpak uninstall --user --unused -y --noninteractive 2>&1
+sudo -A flatpak uninstall --system --unused -y --noninteractive 2>&1
+ok
+step "Старые системные журналы";       sudo -A journalctl --vacuum-time=14d 2>&1; ok
+step "Миниатюры и временные файлы";    rm -rf "$HOME/.cache/thumbnails"; ok
+
+if [ -n "$(ls -A "$HOME/.local/share/Trash/files" 2>/dev/null)" ]; then
+  echo "::ask В корзине есть файлы. Очистить корзину?"
+  read -r a
+  if [ "$a" = "y" ]; then
+    step "Очищаю корзину"
+    rm -rf "$HOME/.local/share/Trash/files/"* "$HOME/.local/share/Trash/info/"*
+    ok
+  fi
+fi
+
+AFTER=$(free_mb)
+FREED=$(( AFTER - BEFORE > 0 ? AFTER - BEFORE : 0 ))
+echo "::done Освобождено: $FREED МБ. Свободно на диске: $(( AFTER / 1024 )) ГБ."

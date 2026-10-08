@@ -1,0 +1,9 @@
+{
+    "KPlugin": {
+        "Authors": [{ "Name": "GeshaNYT" }],
+        "Id": "GeOS",
+        "License": "CC-BY-SA-4.0",
+        "Name": "GeOS Orbit",
+        "Name[ru]": "GeOS Орбита"
+    }
+}

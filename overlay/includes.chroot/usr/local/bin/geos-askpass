@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+# Запрос пароля в стиле GeOS (вместо пароля в терминале). Используется через sudo -A.
+import sys
+
+from PyQt6.QtWidgets import QApplication, QDialog, QHBoxLayout, QLineEdit, QPushButton, QVBoxLayout
+
+import geos_ui as ui
+
+app = QApplication(sys.argv)
+ui.apply(app, "geos-center")
+dlg = QDialog()
+dlg.setWindowTitle("GeOS — нужно разрешение")
+dlg.setFixedWidth(440)
+lay = QVBoxLayout(dlg)
+lay.setContentsMargins(24, 20, 24, 20)
+lay.setSpacing(14)
+head, _ = ui.header("shield", "Нужен пароль", "Это действие меняет систему. Введи пароль своей учётной записи.", 48)
+lay.addLayout(head)
+pw = QLineEdit(echoMode=QLineEdit.EchoMode.Password, placeholderText="Пароль")
+lay.addWidget(pw)
+row = QHBoxLayout()
+row.addStretch()
+cancel = QPushButton("Отмена", objectName="flat")
+ok = QPushButton("Продолжить")
+ok.setDefault(True)
+row.addWidget(cancel)
+row.addWidget(ok)
+lay.addLayout(row)
+cancel.clicked.connect(dlg.reject)
+ok.clicked.connect(dlg.accept)
+pw.returnPressed.connect(dlg.accept)
+if dlg.exec() == QDialog.DialogCode.Accepted:
+    print(pw.text())
+    sys.exit(0)
+sys.exit(1)

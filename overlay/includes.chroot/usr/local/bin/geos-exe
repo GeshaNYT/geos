@@ -2,7 +2,7 @@
 # Запуск Windows-программ (.exe, .msi) через Wine
 [ -f "$1" ] || { kdialog --error "Файл не найден: $1"; exit 1; }
 if [ ! -d "$HOME/.wine" ]; then
-  notify-send -i wine "GeOS" "Первый запуск Windows-программ: готовлю всё нужное, это около минуты…"
+  notify-send -a "GeOS" -i wine "Первый запуск Windows-программ: готовлю всё нужное, это около минуты…"
 fi
 case "$1" in
   *.msi|*.MSI) exec wine msiexec /i "$1" ;;
