@@ -1,5 +1,12 @@
 #!/bin/sh
 # Дополнительные пакеты: ставим всё разом, а если что-то не нашлось — по одному, пропуская отсутствующие.
+# На время сборки dpkg не задаёт вопросов (их некому задать — иначе сборка падает)
+cat > /etc/apt/apt.conf.d/99geos-build << 'APT'
+Dpkg::Options { "--force-confdef"; "--force-confold"; };
+APT
+export DEBIAN_FRONTEND=noninteractive
+dpkg --configure -a || true
+
 LIST=/usr/share/geos/extra-packages.list
 PKGS=$(grep -v '^\s*#' "$LIST" | grep -v '^\s*$' | tr '\n' ' ')
 if ! apt-get install -y $PKGS; then
