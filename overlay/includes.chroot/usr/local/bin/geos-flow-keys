@@ -1,0 +1,3 @@
+#!/bin/sh
+# Подсказка по клавишам GeOS Flow (Win+F1)
+fuzzel --config /usr/share/geos/flow/fuzzel.ini --dmenu --prompt "Клавиши ❯ " --lines 24 --width 56 < /usr/share/geos/flow/keys.txt >/dev/null

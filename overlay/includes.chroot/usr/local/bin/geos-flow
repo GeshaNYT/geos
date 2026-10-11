@@ -1,0 +1,5 @@
+#!/bin/sh
+# Запуск сеанса GeOS Flow (Hyprland с настройками GeOS)
+CFG=/usr/share/geos/flow/hyprland.conf
+[ -f "$HOME/.config/hypr/hyprland.conf" ] && CFG="$HOME/.config/hypr/hyprland.conf"
+exec Hyprland --config "$CFG"

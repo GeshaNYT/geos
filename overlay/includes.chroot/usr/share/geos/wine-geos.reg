@@ -1,0 +1,46 @@
+REGEDIT4
+
+[HKEY_CURRENT_USER\Control Panel\Colors]
+"ActiveBorder"="13 27 52"
+"ActiveTitle"="13 27 52"
+"AppWorkSpace"="7 17 42"
+"Background"="7 17 42"
+"ButtonAlternateFace"="19 40 79"
+"ButtonDkShadow"="7 17 42"
+"ButtonFace"="24 48 90"
+"ButtonHilight"="30 58 110"
+"ButtonLight"="19 40 79"
+"ButtonShadow"="7 17 42"
+"ButtonText"="230 238 250"
+"GradientActiveTitle"="13 27 52"
+"GradientInactiveTitle"="13 27 52"
+"GrayText"="150 170 200"
+"Hilight"="37 99 235"
+"HilightText"="255 255 255"
+"HotTrackingColor"="59 130 246"
+"InactiveBorder"="13 27 52"
+"InactiveTitle"="13 27 52"
+"InactiveTitleText"="150 170 200"
+"InfoText"="230 238 250"
+"InfoWindow"="19 40 79"
+"Menu"="13 27 52"
+"MenuBar"="13 27 52"
+"MenuHilight"="37 99 235"
+"MenuText"="230 238 250"
+"Scrollbar"="13 27 52"
+"TitleText"="230 238 250"
+"Window"="10 22 44"
+"WindowFrame"="30 58 110"
+"WindowText"="230 238 250"
+
+[HKEY_CURRENT_USER\Control Panel\Desktop]
+"FontSmoothing"="2"
+"FontSmoothingType"=dword:00000002
+"FontSmoothingGradientOrientation"=dword:00000001
+"FontSmoothingOrientation"=dword:00000001
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\ThemeManager]
+"ThemeActive"="0"
+
+[HKEY_CURRENT_USER\Software\Wine\X11 Driver]
+"Decorated"="Y"

@@ -1,0 +1,172 @@
+#!/usr/bin/env python3
+# Полоски под музыку для GeOS Flow (Hyprland).
+# Тот же вид, что у geos-visualizer в обычном режиме, но окно — слой рабочего стола (layer-shell):
+# лежит над обоями и под всеми окнами, сквозь него можно кликать.
+import fcntl
+import os
+import subprocess
+import sys
+import tempfile
+
+import gi
+
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
+gi.require_version("GtkLayerShell", "0.1")
+import cairo  # noqa: E402
+from gi.repository import Gdk, GLib, Gtk, GtkLayerShell  # noqa: E402
+
+BARS = 40
+MAX = 100
+HEIGHT = 170
+LOCK = os.path.join(os.environ.get("XDG_RUNTIME_DIR", tempfile.gettempdir()), "geos-visualizer.lock")
+CAVA_CONF = f"""
+[general]
+framerate = 60
+bars = {BARS}
+autosens = 1
+[input]
+method = pulse
+source = auto
+[output]
+method = raw
+raw_target = /dev/stdout
+data_format = ascii
+ascii_max_range = {MAX}
+bar_delimiter = 59
+frame_delimiter = 10
+[smoothing]
+noise_reduction = 60
+"""
+
+
+def rounded_rect(cr, x, y, w, h, r):
+    r = min(r, w / 2, h / 2)
+    cr.new_sub_path()
+    cr.arc(x + w - r, y + r, r, -1.5708, 0)
+    cr.arc(x + w - r, y + h - r, r, 0, 1.5708)
+    cr.arc(x + r, y + h - r, r, 1.5708, 3.1416)
+    cr.arc(x + r, y + r, r, 3.1416, 4.7124)
+    cr.close_path()
+
+
+class Visualizer(Gtk.Window):
+    def __init__(self):
+        super().__init__(title="Визуализатор GeOS")
+        GtkLayerShell.init_for_window(self)
+        GtkLayerShell.set_namespace(self, "geos-visualizer")
+        GtkLayerShell.set_layer(self, GtkLayerShell.Layer.BOTTOM)
+        GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.BOTTOM, True)
+        GtkLayerShell.set_margin(self, GtkLayerShell.Edge.BOTTOM, 40)
+        GtkLayerShell.set_exclusive_zone(self, 0)
+        GtkLayerShell.set_keyboard_interactivity(self, False)
+
+        visual = self.get_screen().get_rgba_visual()
+        if visual:
+            self.set_visual(visual)
+        self.set_app_paintable(True)
+
+        display = Gdk.Display.get_default()
+        monitor = display.get_primary_monitor() or display.get_monitor(0)
+        width = int(monitor.get_geometry().width * 0.7)
+        self.set_size_request(width, HEIGHT)
+
+        self.area = Gtk.DrawingArea()
+        self.area.connect("draw", self.draw)
+        self.add(self.area)
+        # Сквозь полоски можно кликать по рабочему столу
+        self.connect("realize", lambda *_: self.get_window().input_shape_combine_region(cairo.Region(), 0, 0))
+
+        self.target = [0.0] * BARS
+        self.level = [0.0] * BARS
+        self.visible_amount = 0.0
+        self.silent_frames = 0
+        self.buf = b""
+
+        conf = tempfile.NamedTemporaryFile("w", suffix=".conf", delete=False)
+        conf.write(CAVA_CONF)
+        conf.close()
+        self.conf_path = conf.name
+        self.cava = subprocess.Popen(["cava", "-p", self.conf_path], stdout=subprocess.PIPE,
+                                     stderr=subprocess.DEVNULL)
+        fd = self.cava.stdout.fileno()
+        os.set_blocking(fd, False)
+        GLib.io_add_watch(fd, GLib.PRIORITY_DEFAULT, GLib.IO_IN | GLib.IO_HUP, self.on_data)
+        GLib.timeout_add(16, self.tick)
+        self.connect("destroy", self.quit)
+
+    def on_data(self, fd, cond):
+        if cond & GLib.IO_HUP:
+            return False
+        try:
+            self.buf += os.read(fd, 65536)
+        except BlockingIOError:
+            return True
+        lines = self.buf.split(b"\n")
+        self.buf = lines.pop()
+        if lines:
+            vals = [v for v in lines[-1].decode(errors="ignore").split(";") if v.strip()]
+            if len(vals) >= BARS:
+                self.target = [min(int(v), MAX) / MAX for v in vals[:BARS]]
+        return True
+
+    def tick(self):
+        loud = any(t > 0.02 for t in self.target)
+        self.silent_frames = 0 if loud else self.silent_frames + 1
+        show = self.silent_frames < 90
+        self.visible_amount += ((1.0 if show else 0.0) - self.visible_amount) * 0.08
+        for i, t in enumerate(self.target):
+            k = 0.45 if t > self.level[i] else 0.12
+            self.level[i] += (t - self.level[i]) * k
+        self.area.queue_draw()
+        return True
+
+    def draw(self, widget, cr):
+        cr.set_operator(cairo.OPERATOR_SOURCE)
+        cr.set_source_rgba(0, 0, 0, 0)
+        cr.paint()
+        cr.set_operator(cairo.OPERATOR_OVER)
+        if self.visible_amount < 0.01:
+            return False
+        w, h = widget.get_allocated_width(), widget.get_allocated_height()
+        gap = max(4.0, w / BARS * 0.28)
+        bw = (w - gap * (BARS - 1)) / BARS
+        a = self.visible_amount
+        for i, lv in enumerate(self.level):
+            bh = max(6.0, lv * (h - 16))
+            x = i * (bw + gap)
+            # мягкое свечение
+            cr.rectangle(x - 3, h - bh - 3, bw + 6, bh + 3)
+            cr.set_source_rgba(59 / 255, 130 / 255, 246 / 255, 50 / 255 * a)
+            cr.fill()
+            # прямая полоска с переливом от голубого к синему
+            grad = cairo.LinearGradient(0, h - bh, 0, h)
+            grad.add_color_stop_rgba(0, 56 / 255, 189 / 255, 248 / 255, 235 / 255 * a)
+            grad.add_color_stop_rgba(1, 37 / 255, 99 / 255, 235 / 255, 200 / 255 * a)
+            cr.rectangle(x, h - bh, bw, bh)
+            cr.set_source(grad)
+            cr.fill()
+        return False
+
+    def quit(self, *_):
+        self.cava.kill()
+        try:
+            os.unlink(self.conf_path)
+        except OSError:
+            pass
+        Gtk.main_quit()
+
+
+def main():
+    lock = open(LOCK, "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)  # только одна копия
+    except OSError:
+        return
+    win = Visualizer()
+    win.show_all()
+    Gtk.main()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -71,3 +71,10 @@ qt6-svg-plugins
 fonts-inter
 fonts-hack
 kde-cli-tools
+# Звуки KDE, на которые опирается тема GeOS
+ocean-sound-theme
+sound-theme-freedesktop
+# Распределение нагрузки по ядрам процессора
+irqbalance
+# Полоски под музыку
+cava

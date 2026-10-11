@@ -1,0 +1,8 @@
+#!/bin/sh
+# Подсказка при первом входе в GeOS Flow
+FLAG="$HOME/.config/geos-flow-welcomed"
+[ -f "$FLAG" ] && exit 0
+sleep 3
+mkdir -p "$HOME/.config" && touch "$FLAG"
+notify-send -a "GeOS" -i geos-logo -t 15000 "Добро пожаловать в GeOS Flow" \
+  "Окна раскладываются сами. Win — меню, Win+Enter — терминал, Win+Q — закрыть окно, Win+F1 — все клавиши, Win+X — выход."

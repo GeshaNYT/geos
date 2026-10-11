@@ -4,6 +4,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 
 from PyQt6.QtCore import QProcess, Qt, QUrl
@@ -68,7 +69,8 @@ SYSTEM = [
     ("taskmgr", "Диспетчер задач", "Процессы и нагрузка (Ctrl+Shift+Esc)", ["plasma-systemmonitor"]),
     ("android", "Включить Android", "Подготовить запуск .apk (скачает ~1,5 ГБ)",
      ["geos-task", "android"]),
-    ("exe", "Windows-программы", "Настройки запуска .exe (Wine)", ["winecfg"]),
+    ("exe", "Windows-программы", "Настройки запуска .exe (Wine)",
+     ["sh", "-c", "/usr/local/bin/geos-wine-setup; winecfg"]),
     ("phone", "Связь с телефоном", "Файлы, уведомления и буфер обмена", ["kdeconnect-app"]),
     ("snapshot", "Снимки системы", "Откат системы, если что-то сломалось", ["timeshift-launcher"]),
     ("printer", "Принтеры", "Подключить принтер или сканер", ["systemsettings", "kcm_printer_manager"]),
@@ -209,7 +211,9 @@ class Center(QWidget):
         lay.setContentsMargins(4, 12, 4, 4)
         lay.setSpacing(16)
 
-        hello = QLabel(f"Привет, {user_name()}!", objectName="big")
+        name = user_name()
+        greeting = "Добро пожаловать в GeOS!" if name.lower() in ("geos", "geosuser") else f"Привет, {name}!"
+        hello = QLabel(greeting, objectName="big")
         lay.addWidget(hello)
         lay.addWidget(QLabel(system_summary(), objectName="desc"))
 
@@ -222,6 +226,10 @@ class Center(QWidget):
             ("update", "Обновления", "Свежие версии системы и программ",
              lambda: self.run_tool(["plasma-discover", "--mode", "update"])),
         ]
+        if os.path.exists("/usr/share/wayland-sessions/geos-flow.desktop") and \
+                "Hyprland" not in os.environ.get("XDG_CURRENT_DESKTOP", ""):
+            actions.append(("flow", "Попробовать GeOS Flow", "Плиточные окна и плавные анимации",
+                            lambda: self.run_tool(["geos-session", "flow"])))
         installer = "/usr/share/applications/install-debian.desktop"
         if is_live() and os.path.exists(installer):
             actions.insert(0, ("disk", "Установить GeOS", "Поставить систему на этот компьютер",
@@ -411,12 +419,42 @@ class Center(QWidget):
         grid = QGridLayout(page)
         grid.setSpacing(14)
         grid.setAlignment(Qt.AlignmentFlag.AlignTop)
-        for i, (icon_name, name, desc, cmd) in enumerate(SYSTEM):
+        items = list(SYSTEM)
+        if os.path.exists("/usr/share/wayland-sessions/geos-flow.desktop"):
+            if "Hyprland" in os.environ.get("XDG_CURRENT_DESKTOP", ""):
+                items.insert(0, ("logo", "Классический режим", "Вернуться к привычному рабочему столу GeOS",
+                                 ["geos-session", "classic"]))
+            else:
+                items.insert(0, ("flow", "Режим GeOS Flow", "Окна раскладываются сами, плавные анимации",
+                                 ["geos-session", "flow"]))
+        frames = []
+        for icon_name, name, desc, cmd in items:
             btn = QPushButton("Открыть")
             btn.clicked.connect(lambda _, c=cmd: self.run_tool(c))
-            frame, _ = card(icon_name, name, desc, btn)
+            frames.append(card(icon_name, name, desc, btn)[0])
+        # Полоски под музыку на рабочем столе (в обычном режиме по умолчанию выкл, в GeOS Flow — вкл)
+        if shutil.which("geos-visualizer"):
+            self.viz_btn = QPushButton()
+            self.viz_btn.clicked.connect(self.toggle_visualizer)
+            self.update_viz_button()
+            frames.insert(1, card("viz", "Полоски под музыку", "Светящийся визуализатор на рабочем столе",
+                                  self.viz_btn)[0])
+        for i, frame in enumerate(frames):
             grid.addWidget(frame, i // COLUMNS, i % COLUMNS)
         return scroll(page)
+
+    def update_viz_button(self):
+        on = subprocess.run(["geos-visualizer", "--status"], capture_output=True, text=True).stdout.strip() == "on"
+        self.viz_btn.setText("Выключить" if on else "Включить")
+        self.viz_btn.setObjectName("open" if on else "")
+        self.viz_btn.style().unpolish(self.viz_btn)
+        self.viz_btn.style().polish(self.viz_btn)
+
+    def toggle_visualizer(self):
+        subprocess.run(["geos-visualizer", "--toggle"])
+        self.update_viz_button()
+        if self.viz_btn.text() == "Выключить":
+            self.status.setText("Полоски включены — включи музыку и посмотри на рабочий стол ✔")
 
     def run_tool(self, cmd):
         if not shutil.which(cmd[0]):

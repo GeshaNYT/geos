@@ -1,0 +1,49 @@
+#!/bin/sh
+# GeOS Flow — второй режим рабочего стола на Hyprland.
+# Hyprland в Debian 13 есть только в backports. Если что-то не установится —
+# GeOS собирается как обычно, просто без этого режима.
+export DEBIAN_FRONTEND=noninteractive
+
+echo "deb http://deb.debian.org/debian trixie-backports main contrib non-free non-free-firmware" \
+  > /etc/apt/sources.list.d/backports.list
+apt-get update || true
+
+# Каждый пакет: сначала из backports, потом из основного репозитория
+inst() {
+  for p in "$@"; do
+    apt-get install -y -t trixie-backports "$p" || apt-get install -y "$p" \
+      || echo "ВНИМАНИЕ: пакет $p не найден, пропускаю"
+  done
+}
+
+inst hyprland
+if ! command -v Hyprland >/dev/null 2>&1; then
+  echo "ВНИМАНИЕ: Hyprland не установился — GeOS Flow не будет в этой сборке"
+  exit 0
+fi
+inst xdg-desktop-portal-hyprland hyprlock hypridle
+inst waybar fuzzel mako-notifier swaybg grim slurp wl-clipboard cliphist \
+     brightnessctl playerctl pavucontrol-qt cava fonts-dejavu-core
+inst python3-gi python3-gi-cairo gir1.2-gtk-3.0 libgtk-layer-shell0 gir1.2-gtklayershell-0.1
+
+# Сеанс «GeOS Flow» на экране входа (стандартный пункт Hyprland прячем)
+cat > /usr/share/wayland-sessions/geos-flow.desktop << 'DSK'
+[Desktop Entry]
+Name=GeOS Flow
+Comment=Плиточный режим GeOS с плавными анимациями
+Exec=/usr/local/bin/geos-flow
+Type=Application
+DesktopNames=Hyprland
+DSK
+for f in /usr/share/wayland-sessions/hyprland*.desktop; do
+  [ -f "$f" ] && sed -i '/^\[Desktop Entry\]/a NoDisplay=true\nHidden=true' "$f"
+done
+
+# Классический режим на экране входа называется просто «GeOS»
+f=/usr/share/wayland-sessions/plasma.desktop
+if [ -f "$f" ]; then
+  sed -i -E '/^Name\[/d; s/^Name=.*/Name=GeOS/; /^Comment\[/d; s/^Comment=.*/Comment=Классический рабочий стол GeOS/' "$f"
+fi
+f=/usr/share/xsessions/plasmax11.desktop
+[ -f "$f" ] && sed -i -E '/^Name\[/d; s/^Name=.*/Name=GeOS (X11, для старых видеокарт)/' "$f"
+true

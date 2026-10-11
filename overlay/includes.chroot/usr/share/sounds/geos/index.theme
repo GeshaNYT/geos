@@ -1,0 +1,8 @@
+[Sound Theme]
+Name=GeOS
+Comment=Мягкие звуки GeOS
+Inherits=ocean,freedesktop
+Directories=stereo
+
+[stereo]
+OutputProfile=stereo

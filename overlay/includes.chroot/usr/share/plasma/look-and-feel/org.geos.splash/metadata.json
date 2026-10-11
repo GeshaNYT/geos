@@ -1,0 +1,11 @@
+{
+    "KPackageStructure": "Plasma/LookAndFeel",
+    "KPlugin": {
+        "Authors": [{ "Name": "GeshaNYT" }],
+        "Description": "GeOS splash screen",
+        "Id": "org.geos.splash",
+        "License": "GPL-2.0+",
+        "Name": "GeOS"
+    },
+    "X-Plasma-APIVersion": "2"
+}

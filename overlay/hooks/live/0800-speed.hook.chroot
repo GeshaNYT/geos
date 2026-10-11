@@ -1,0 +1,9 @@
+#!/bin/sh
+# Ускорение GeOS: быстрее загрузка, отзывчивее система
+# Не ждать полного подключения к сети при загрузке
+systemctl disable NetworkManager-wait-online.service 2>/dev/null || true
+# Еженедельная оптимизация SSD
+systemctl enable fstrim.timer 2>/dev/null || true
+# Анимации интерфейса чуть быстрее
+printf '\n[KDE]\nAnimationDurationFactor=0.7\n' >> /etc/skel/.config/kdeglobals
+true

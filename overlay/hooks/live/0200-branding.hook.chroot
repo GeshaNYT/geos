@@ -35,3 +35,11 @@ if [ -f /etc/default/zramswap ]; then
   grep -q '^ALGO=' /etc/default/zramswap    || echo 'ALGO=zstd'  >> /etc/default/zramswap
   grep -q '^PERCENT=' /etc/default/zramswap || echo 'PERCENT=50' >> /etc/default/zramswap
 fi
+# Приветствие KDE (с Konqi) не показываем — его заменяет Центр GeOS
+for f in /etc/xdg/autostart/org.kde.plasma-welcome.desktop; do
+  [ -f "$f" ] && ! grep -q '^Hidden=true' "$f" && sed -i '/^\[Desktop Entry\]/a Hidden=true' "$f"
+done
+true
+# Звуки GeOS
+printf '\n[Sounds]\nTheme=geos\n' >> /etc/skel/.config/kdeglobals
+true

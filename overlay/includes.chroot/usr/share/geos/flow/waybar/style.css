@@ -1,0 +1,70 @@
+/* Панель GeOS Flow — цвета GeOS Blue */
+* {
+    font-family: "Inter", "Noto Sans", "Noto Color Emoji", sans-serif;
+    font-size: 13px;
+    border: none;
+    min-height: 0;
+}
+window#waybar.geos-panel {
+    background: rgba(13, 27, 52, 0.55);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    border-radius: 14px;
+    color: #e6eefa;
+}
+tooltip {
+    background: #13284f;
+    border: 1px solid #1e3a6e;
+    border-radius: 10px;
+}
+tooltip label { color: #e6eefa; }
+
+#custom-geos {
+    background-image: url("/usr/share/icons/hicolor/64x64/apps/geos-logo.png");
+    background-size: 26px 26px;
+    background-position: center;
+    background-repeat: no-repeat;
+    min-width: 34px;
+    margin: 0 4px 0 8px;
+}
+#workspaces button {
+    color: #96aac8;
+    padding: 0 6px;
+    border-radius: 8px;
+    background: transparent;
+}
+#workspaces button.active { color: #3b82f6; }
+#workspaces button:hover { background: #1a3363; color: #e6eefa; }
+
+#window { color: #96aac8; padding: 0 8px; }
+#clock { font-weight: bold; padding: 0 12px; }
+
+#tray, #language, #pulseaudio, #network, #battery, #custom-power {
+    padding: 0 10px;
+    margin: 6px 0;
+    border-radius: 9px;
+    background: #13284f;
+}
+#language { font-weight: bold; color: #3b82f6; }
+#battery.warning { color: #fbbf24; }
+#battery.critical { color: #f87171; }
+#custom-power { margin-right: 6px; color: #f87171; }
+#custom-power:hover, #pulseaudio:hover, #network:hover { background: #1a3363; }
+
+/* Мини-полоски под музыку на панели */
+#custom-cava-mini {
+    font-family: "DejaVu Sans Mono", monospace;
+    font-size: 14px;
+    color: #38bdf8;
+    padding: 0 6px;
+}
+
+/* ---------- Виджеты рабочего стола ---------- */
+window#waybar.geos-clock {
+    background: transparent;
+    border: none;
+}
+#clock.big {
+    color: #e6eefa;
+    padding: 0;
+    text-shadow: 0 2px 18px rgba(7, 17, 42, 0.9);
+}

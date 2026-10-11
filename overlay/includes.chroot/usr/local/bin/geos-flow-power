@@ -1,0 +1,11 @@
+#!/bin/sh
+# Меню выключения GeOS Flow
+CHOICE=$(printf '🔒  Заблокировать\n💤  Спящий режим\n🔄  Перезагрузить\n⏻  Выключить\n🖥  Перейти в GeOS (классический)\n🚪  Выйти из сеанса\n' | fuzzel --config /usr/share/geos/flow/fuzzel.ini --dmenu --prompt "GeOS ❯ " --lines 6 --width 34)
+case "$CHOICE" in
+  *Заблокировать*) hyprlock -c /usr/share/geos/flow/hyprlock.conf ;;
+  *Спящий*)        systemctl suspend ;;
+  *Перезагрузить*) systemctl reboot ;;
+  *Выключить*)     systemctl poweroff ;;
+  *классический*)  /usr/local/bin/geos-session classic ;;
+  *Выйти*)         hyprctl dispatch exit ;;
+esac

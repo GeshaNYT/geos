@@ -1,7 +1,14 @@
 #!/bin/sh
-# Анимация загрузки GeOS: берём крутилку из стандартной темы и ставим свой логотип
+# Анимация загрузки GeOS вместо «debian 13»
 T=/usr/share/plymouth/themes/geos
 for f in /usr/share/plymouth/themes/spinner/*.png; do
-  [ "$(basename "$f")" = "watermark.png" ] || cp -n "$f" "$T/"
+  [ "$(basename "$f")" = "watermark.png" ] || [ -e "$T/$(basename "$f")" ] || cp "$f" "$T/"
 done
-plymouth-set-default-theme -R geos || echo "ВНИМАНИЕ: тема загрузки не применилась"
+# Debian (desktop-base) подставляет свою тему через альтернативу default.plymouth — переключаем её на GeOS
+update-alternatives --install /usr/share/plymouth/themes/default.plymouth default.plymouth "$T/geos.plymouth" 300 || true
+update-alternatives --set default.plymouth "$T/geos.plymouth" || true
+# И явно указываем тему в настройках
+mkdir -p /etc/plymouth
+printf '[Daemon]\nTheme=geos\nShowDelay=0\nDeviceTimeout=8\n' > /etc/plymouth/plymouthd.conf
+plymouth-set-default-theme geos || echo "ВНИМАНИЕ: тема загрузки не применилась"
+update-initramfs -u -k all || true

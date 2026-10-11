@@ -35,6 +35,16 @@ for (var i = 0; i < ps.length; i++) {
     c[j].writeConfig("showDate", true);
     c[j].writeConfig("dateDisplayFormat", "BelowTime");
   }
+}
+// Большие часы на рабочем столе (справа сверху)
+var d = desktops()[0];
+if (d) {
+  var g = screenGeometry(d.screen);
+  var w = d.addWidget("org.kde.plasma.digitalclock", g.width - 480, 60, 420, 200);
+  w.currentConfigGroup = ["Appearance"];
+  w.writeConfig("showDate", true);
+  w.writeConfig("dateDisplayFormat", "BelowTime");
+  w.writeConfig("use24hFormat", 2);
 }'
 
 # Значки на рабочем столе, как в Windows

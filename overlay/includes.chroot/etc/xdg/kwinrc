@@ -2,7 +2,13 @@
 kwin4_effect_shapecornersEnabled=true
 magiclampEnabled=true
 blurEnabled=true
+translucencyEnabled=true
 
 [Round-Corners]
 Size=12
 InactiveCornerRadius=12
+
+[Effect-translucency]
+Inactive=90
+MoveResize=85
+Dialogs=96

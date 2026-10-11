@@ -1,0 +1,10 @@
+#!/bin/sh
+# Готовит Wine для Windows-программ: создаёт среду и красит окна в цвета GeOS (один раз)
+export WINEDEBUG=-all
+FLAG="${WINEPREFIX:-$HOME/.wine}/.geos-style"
+[ -f "$FLAG" ] && exit 0
+notify-send -a "GeOS" -i wine "Готовлю запуск Windows-программ" "Это нужно один раз и займёт около минуты…"
+wineboot -i >/dev/null 2>&1
+wine regedit /S /usr/share/geos/wine-geos.reg >/dev/null 2>&1
+wineserver -w 2>/dev/null
+touch "$FLAG"
