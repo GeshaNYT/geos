@@ -75,6 +75,8 @@ if $LIVE; then
   # Живой режим (с флешки): экран не блокируется, пароль никто не задавал
   kwriteconfig6 --file kscreenlockerrc --group Daemon --key Autolock false
   kwriteconfig6 --file kscreenlockerrc --group Daemon --key LockOnResume false
+  # Автообновления в живом режиме бессмысленны (всё сбросится) и мешают выключению
+  kwriteconfig6 --file PlasmaDiscoverUpdates --group Global --key UseUnattendedUpdates false
   HINT=" Пароль в живом режиме: live."
 fi
 

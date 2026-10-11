@@ -1,13 +1,24 @@
 #!/bin/sh
 # Waydroid — запуск Android-приложений (.apk)
-set -e
-curl -fsSL https://repo.waydro.id/waydroid.gpg -o /usr/share/keyrings/waydroid.gpg
-for dist in trixie bookworm; do
-  echo "deb [signed-by=/usr/share/keyrings/waydroid.gpg] https://repo.waydro.id/ $dist main" \
-    > /etc/apt/sources.list.d/waydroid.list
-  apt-get update && apt-get install -y waydroid && break
-done
+if curl -fsSL https://repo.waydro.id/waydroid.gpg -o /usr/share/keyrings/waydroid.gpg; then
+  for dist in trixie bookworm; do
+    echo "deb [signed-by=/usr/share/keyrings/waydroid.gpg] https://repo.waydro.id/ $dist main" \
+      > /etc/apt/sources.list.d/waydroid.list
+    apt-get update && apt-get install -y waydroid && break
+  done
+fi
+if ! command -v waydroid >/dev/null; then
+  echo "ВНИМАНИЕ: Waydroid не установился — Android-приложений не будет"
+  # Убираем недоступный репозиторий, иначе каждое обновление списка пакетов будет с ошибкой
+  rm -f /etc/apt/sources.list.d/waydroid.list
+  apt-get update || true
+fi
+
 # Flathub — главный магазин Linux-приложений
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
 # Каталог Flathub с официальными иконками программ — для Центра GeOS (работает и без интернета)
 flatpak update --appstream flathub || echo "ВНИМАНИЕ: каталог Flathub не скачался, иконки загрузятся из интернета"
+# Контейнер Android не запускаем при каждой загрузке — он включается сам, когда нужен
+# (geos-android-setup). Так загрузка и выключение быстрее.
+systemctl disable waydroid-container.service 2>/dev/null || true
+true

@@ -7,6 +7,8 @@ translucencyEnabled=true
 [Round-Corners]
 Size=12
 InactiveCornerRadius=12
+# Полоски под музыку — без рамки и тени
+Exclusions=geos-visualizer
 
 [Effect-translucency]
 Inactive=90

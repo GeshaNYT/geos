@@ -73,6 +73,7 @@ def kwin_rule(x, y, w, h):
         "skippager": "true", "skippagerrule": 2, "skipswitcher": "true", "skipswitcherrule": 2,
         "noborder": "true", "noborderrule": 2, "acceptfocus": "false", "acceptfocusrule": 2,
         "position": f"{x},{y}", "positionrule": 2, "size": f"{w},{h}", "sizerule": 2,
+        "opacityactive": 100, "opacityactiverule": 2, "opacityinactive": 100, "opacityinactiverule": 2,
     }.items():
         w_(rid, key, val)
     subprocess.run(["dbus-send", "--session", "--type=method_call", "--dest=org.kde.KWin",
@@ -217,8 +218,9 @@ def main():
     app = QApplication(sys.argv)
     app.setDesktopFileName(APP_ID)
     scr = QGuiApplication.primaryScreen().availableGeometry()
+    # На Wayland Qt не знает, где панель, поэтому отступ снизу берём с запасом под панель GeOS
     w, h = int(scr.width() * 0.7), 170
-    x, y = scr.x() + (scr.width() - w) // 2, scr.y() + scr.height() - h - 40
+    x, y = scr.x() + (scr.width() - w) // 2, scr.y() + scr.height() - h - 96
     kwin_rule(x, y, w, h)
     v = Visualizer((x, y, w, h))
     v.show()

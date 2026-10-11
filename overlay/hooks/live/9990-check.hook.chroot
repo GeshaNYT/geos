@@ -1,0 +1,66 @@
+#!/bin/sh
+# Последний шаг: ещё раз закрепляем тему загрузки GeOS (после всех установок пакетов)
+# и печатаем в лог сборки короткий отчёт — по нему видно, что получилось, а что нет.
+T=geos
+if [ -f /usr/share/plymouth/themes/$T/$T.plymouth ]; then
+  update-alternatives --install /usr/share/plymouth/themes/default.plymouth default.plymouth \
+    /usr/share/plymouth/themes/$T/$T.plymouth 300 >/dev/null 2>&1 || true
+  update-alternatives --set default.plymouth /usr/share/plymouth/themes/$T/$T.plymouth >/dev/null 2>&1 || true
+  printf '[Daemon]\nTheme=%s\nShowDelay=0\nDeviceTimeout=8\n' "$T" > /etc/plymouth/plymouthd.conf
+  plymouth-set-default-theme "$T" >/dev/null 2>&1 || true
+  # live-build может подменять update-initramfs на время сборки — вызываем настоящий
+  UI=/usr/sbin/update-initramfs
+  for c in /usr/sbin/update-initramfs.orig.initramfs-tools /usr/sbin/update-initramfs.distrib; do
+    [ -x "$c" ] && UI="$c"
+  done
+  for k in /lib/modules/*; do
+    v=$(basename "$k")
+    "$UI" -u -k "$v" >/dev/null 2>&1 || "$UI" -c -k "$v" >/dev/null 2>&1 || true
+  done
+fi
+
+# Настройки KDE для новых пользователей: полная цветовая схема GeOS (чтобы программы были синими
+# сразу, даже в GeOS Flow до первого входа в обычный режим) и без повторяющихся разделов
+python3 - << 'PY'
+import configparser
+def load(path):
+    c = configparser.RawConfigParser(strict=False, interpolation=None, delimiters=("=",))
+    c.optionxform = str
+    c.read(path, encoding="utf-8")
+    return c
+skel = "/etc/skel/.config/kdeglobals"
+cfg = load(skel)
+scheme = load("/usr/share/color-schemes/GeOSBlue.colors")
+for sec in scheme.sections():
+    if sec.startswith(("Colors:", "WM", "ColorEffects:")):
+        if not cfg.has_section(sec):
+            cfg.add_section(sec)
+        for k, v in scheme.items(sec):
+            cfg.set(sec, k, v)
+with open(skel, "w", encoding="utf-8") as f:
+    cfg.write(f, space_around_delimiters=False)
+PY
+
+ok()  { echo "  [OK]   $*"; }
+bad() { echo "  [НЕТ]  $*"; }
+chk() { if eval "$1" >/dev/null 2>&1; then ok "$2"; else bad "$2"; fi; }
+
+echo
+echo "================ ПРОВЕРКА GeOS ================"
+echo "  Тема загрузки по настройкам: $(plymouth-set-default-theme 2>/dev/null)"
+echo "  default.plymouth -> $(readlink -f /usr/share/plymouth/themes/default.plymouth 2>/dev/null)"
+INITRD=$(ls -1 /boot/initrd.img-* 2>/dev/null | tail -1)
+chk "lsinitramfs '$INITRD' | grep -q 'plymouth/themes/geos'" "Тема загрузки GeOS внутри initrd ($INITRD)"
+chk "lsinitramfs '$INITRD' | grep -q 'plymouthd.conf'"        "Настройки заставки внутри initrd"
+chk "[ -f /usr/share/plasma/look-and-feel/org.geos.desktop/contents/splash/Splash.qml ]" "Заставка рабочего стола GeOS"
+chk "grep -q 'exit 0' /usr/bin/plasma-welcome"                "Приветствие KDE (Konqi) отключено"
+chk "ls /usr/lib/*/qt6/plugins/kwin/effects/plugins/ | grep -qi shapecorners" "Скруглённые углы окон (эффект установлен)"
+chk "! ls /etc/systemd/user/*.wants/waybar.service"           "Лишняя полоска Waybar не запускается в обычном GeOS"
+chk "[ -f /usr/share/wayland-sessions/geos-flow.desktop ]"    "Режим GeOS Flow"
+chk "command -v cava"                                          "Полоски под музыку (cava)"
+chk "command -v waydroid"                                      "Android (Waydroid)"
+chk "command -v wine"                                          "Windows-программы (Wine)"
+chk "grep -q '^NAME=\"GeOS\"' /usr/lib/os-release || [ -x /usr/local/sbin/geos-branding ]" "Название GeOS"
+echo "==============================================="
+echo
+true

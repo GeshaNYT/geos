@@ -1,0 +1,46 @@
+#!/bin/sh
+# Оформление GeOS для Plasma: свой пакет оформления (копия Breeze Dark) с заставкой GeOS.
+# Полная копия гарантирует, что Plasma примет пакет, — иначе она молча показывает стандартную заставку.
+L=/usr/share/plasma/look-and-feel
+SRC=$L/org.kde.breezedark.desktop
+DST=$L/org.geos.desktop
+if [ -d "$SRC" ]; then
+  rm -rf "$DST"; cp -r "$SRC" "$DST"
+  rm -rf "$DST/contents/splash"; mkdir -p "$DST/contents/splash/images"
+  cp /usr/share/geos/splash/Splash.qml "$DST/contents/splash/Splash.qml"
+  cp /usr/share/geos/splash/geos-logo.png "$DST/contents/splash/images/geos-logo.png"
+  python3 - "$DST/metadata.json" << 'PY'
+import json, sys
+p = sys.argv[1]
+m = json.load(open(p))
+k = m.setdefault("KPlugin", {})
+k["Id"] = "org.geos.desktop"
+k["Name"] = "GeOS"
+k["Description"] = "Оформление GeOS"
+for key in list(k):
+    if key.startswith(("Name[", "Description[")):
+        del k[key]
+json.dump(m, open(p, "w"), ensure_ascii=False, indent=4)
+PY
+  # Обои GeOS по умолчанию в этом оформлении
+  f="$DST/contents/defaults"
+  [ -f "$f" ] && sed -i '/^\[Wallpaper\]/,/^\[/{s#^Image=.*#Image=GeOS#}' "$f"
+  # Новым пользователям — оформление GeOS
+  if grep -q '^\[KDE\]' /etc/skel/.config/kdeglobals 2>/dev/null; then
+    sed -i '/^\[KDE\]/a LookAndFeelPackage=org.geos.desktop' /etc/skel/.config/kdeglobals
+  else
+    printf '\n[KDE]\nLookAndFeelPackage=org.geos.desktop\n' >> /etc/skel/.config/kdeglobals
+  fi
+  mkdir -p /etc/skel/.config
+  printf '[KSplash]\nEngine=KSplashQML\nTheme=org.geos.desktop\n' > /etc/skel/.config/ksplashrc
+else
+  echo "ВНИМАНИЕ: нет пакета Breeze Dark — заставка GeOS не установлена"
+fi
+
+# Приветствие KDE с Konqi: заменяем программу на пустышку (как бы её ни запускали — она ничего не покажет)
+if [ -x /usr/bin/plasma-welcome ]; then
+  dpkg-divert --local --rename --divert /usr/bin/plasma-welcome.kde --add /usr/bin/plasma-welcome
+  printf '#!/bin/sh\n# В GeOS вместо приветствия KDE открывается Центр GeOS\nexit 0\n' > /usr/bin/plasma-welcome
+  chmod +x /usr/bin/plasma-welcome
+fi
+true

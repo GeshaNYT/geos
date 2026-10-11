@@ -1,21 +1,28 @@
 #!/bin/sh
-# Скруглённые углы окон (KDE Rounded Corners). Если сборка эффекта не удастся — ISO всё равно соберётся.
+# Скруглённые углы окон (KDE Rounded Corners). Пробуем свежую версию, а если она не собирается
+# с KWin из Debian 13 — более ранние. Если не выйдет ни одна, ISO всё равно соберётся.
 cat > /tmp/rc.sh << 'SCRIPT'
-set -e
-DEPS="git cmake g++ gettext extra-cmake-modules qt6-base-private-dev qt6-base-dev-tools libkf6configwidgets-dev libkf6kcmutils-dev kwin-dev libdrm-dev"
-# запоминаем, чего не было, чтобы после сборки удалить только это
+DEPS="git cmake g++ gettext extra-cmake-modules qt6-base-private-dev qt6-base-dev-tools libkf6configwidgets-dev libkf6kcmutils-dev libkf6i18n-dev libkf6windowsystem-dev kwin-dev libdrm-dev libepoxy-dev libwayland-dev"
 NEW=""
 for p in $DEPS; do dpkg -s "$p" >/dev/null 2>&1 || NEW="$NEW $p"; done
-apt-get install -y --no-install-recommends $DEPS
-git clone --depth 1 https://github.com/matinlotfali/KDE-Rounded-Corners /tmp/krc
+apt-get install -y --no-install-recommends $DEPS || for p in $DEPS; do apt-get install -y --no-install-recommends "$p" || true; done
+rm -rf /tmp/krc
+git clone https://github.com/matinlotfali/KDE-Rounded-Corners /tmp/krc || exit 1
 cd /tmp/krc
-cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
-cmake --build . -j"$(nproc)"
-cmake --install .
+DONE=""
+for ref in master v0.9.0 v0.8.7 v0.7.2; do
+  echo ">>> Скруглённые углы: пробую версию $ref"
+  git checkout -q -f "$ref" && git clean -qfdx || continue
+  if cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr . \
+     && cmake --build build -j"$(nproc)" && cmake --install build; then
+    DONE=$ref; break
+  fi
+done
 cd /
 rm -rf /tmp/krc
 [ -n "$NEW" ] && apt-get purge -y $NEW
-apt-get autoremove -y --purge
+if [ -n "$DONE" ]; then echo ">>> Скруглённые углы: установлена версия $DONE"; else exit 1; fi
 SCRIPT
 sh /tmp/rc.sh || echo "ВНИМАНИЕ: скруглённые углы не собрались, продолжаю без них"
 rm -f /tmp/rc.sh
+true

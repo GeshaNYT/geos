@@ -26,6 +26,21 @@ inst waybar fuzzel mako-notifier swaybg grim slurp wl-clipboard cliphist \
      brightnessctl playerctl pavucontrol-qt cava fonts-dejavu-core
 inst python3-gi python3-gi-cairo gir1.2-gtk-3.0 libgtk-layer-shell0 gir1.2-gtklayershell-0.1
 
+# Waybar ставится со службой, которая запускает его с настройками по умолчанию во ВСЕХ сеансах —
+# из-за этого в обычном GeOS сверху появлялась лишняя разноцветная полоска.
+# Отключаем: в GeOS Flow панель запускается сама, со своими настройками.
+systemctl --global disable waybar.service 2>/dev/null || true
+rm -f /etc/systemd/user/*.wants/waybar.service
+for f in /etc/xdg/autostart/waybar*.desktop; do [ -f "$f" ] && rm -f "$f"; done
+# То же для других программ GeOS Flow: в обычном GeOS они не должны запускаться сами
+for svc in hypridle.service hyprpaper.service mako.service; do
+  systemctl --global disable "$svc" 2>/dev/null || true
+  rm -f /etc/systemd/user/*.wants/"$svc"
+done
+# mako умеет запускаться сам при первом уведомлении (D-Bus) и тогда перехватывает уведомления
+# у KDE — они становятся квадратными, с моноширинным шрифтом. В GeOS Flow mako запускается явно.
+rm -f /usr/share/dbus-1/services/fr.emersion.mako.service
+
 # Сеанс «GeOS Flow» на экране входа (стандартный пункт Hyprland прячем)
 cat > /usr/share/wayland-sessions/geos-flow.desktop << 'DSK'
 [Desktop Entry]
