@@ -45,7 +45,8 @@ ok()  { echo "  [OK]   $*"; }
 bad() { echo "  [НЕТ]  $*"; }
 chk() { if eval "$1" >/dev/null 2>&1; then ok "$2"; else bad "$2"; fi; }
 
-echo
+REPORT=/usr/share/geos/build-report.txt
+{
 echo "================ ПРОВЕРКА GeOS ================"
 echo "  Тема загрузки по настройкам: $(plymouth-set-default-theme 2>/dev/null)"
 echo "  default.plymouth -> $(readlink -f /usr/share/plymouth/themes/default.plymouth 2>/dev/null)"
@@ -62,5 +63,5 @@ chk "command -v waydroid"                                      "Android (Waydroi
 chk "command -v wine"                                          "Windows-программы (Wine)"
 chk "grep -q '^NAME=\"GeOS\"' /usr/lib/os-release || [ -x /usr/local/sbin/geos-branding ]" "Название GeOS"
 echo "==============================================="
-echo
+} | tee "$REPORT"
 true

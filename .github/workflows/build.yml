@@ -22,11 +22,32 @@ jobs:
       - name: Собрать ISO внутри Debian
         run: |
           sudo docker run --rm --privileged -v "$PWD":/work -w /work debian:trixie bash -c '
-            set -e
+            set -e -o pipefail
             apt-get update && apt-get install -y sudo
             chmod +x build.sh overlay/hooks/live/* overlay/includes.chroot/usr/local/bin/* overlay/includes.chroot/usr/local/sbin/*
-            ./build.sh
+            ./build.sh 2>&1 | tee /work/build.log
           '
+
+      - name: Отчёт проверки GeOS
+        if: always()
+        run: |
+          # Отчёт и предупреждения выводятся на странице сборки (раздел Annotations)
+          esc() { sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}'; }
+          f=build/chroot/usr/share/geos/build-report.txt
+          if sudo test -f "$f"; then
+            sudo cat "$f"
+            echo "::notice title=ПРОВЕРКА GeOS::$(sudo cat "$f" | esc)"
+          else
+            echo "::warning title=ПРОВЕРКА GeOS::Отчёт не создан — сборка остановилась раньше"
+          fi
+          if [ -f build.log ]; then
+            W=$(grep -a "ВНИМАНИЕ" build.log | sort -u | head -40 || true)
+            [ -n "$W" ] && echo "::warning title=Предупреждения сборки::$(echo "$W" | esc)"
+            if ! ls build/*.iso >/dev/null 2>&1; then
+              echo "::error title=Последние строки лога::$(tail -40 build.log | esc)"
+            fi
+          fi
+          true
 
       - name: Выложить ISO для скачивания
         uses: actions/upload-artifact@v4
