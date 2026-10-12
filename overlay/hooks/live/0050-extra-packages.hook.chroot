@@ -1,17 +1,22 @@
 #!/bin/sh
 # Дополнительные пакеты: ставим всё разом, а если что-то не нашлось — по одному, пропуская отсутствующие.
 # На время сборки dpkg не задаёт вопросов (их некому задать — иначе сборка падает)
+# и не зависает намертво, если какой-то сервер Debian отвечает плохо (повторы и таймауты)
 cat > /etc/apt/apt.conf.d/99geos-build << 'APT'
 Dpkg::Options { "--force-confdef"; "--force-confold"; };
+Acquire::Retries "5";
+Acquire::http::Timeout "60";
+Acquire::https::Timeout "60";
+Acquire::http::Pipeline-Depth "0";
 APT
 export DEBIAN_FRONTEND=noninteractive
 dpkg --configure -a || true
 
 LIST=/usr/share/geos/extra-packages.list
 PKGS=$(grep -v '^\s*#' "$LIST" | grep -v '^\s*$' | tr '\n' ' ')
-if ! apt-get install -y $PKGS; then
+if ! timeout 45m apt-get install -y $PKGS; then
   echo "Ставлю пакеты по одному…"
   for p in $PKGS; do
-    apt-get install -y "$p" || echo "ВНИМАНИЕ: пакет $p не найден, пропускаю"
+    timeout 15m apt-get install -y "$p" || echo "ВНИМАНИЕ: пакет $p не установился, пропускаю"
   done
 fi

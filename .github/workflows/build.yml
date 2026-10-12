@@ -25,7 +25,9 @@ jobs:
             set -e -o pipefail
             apt-get update && apt-get install -y sudo
             chmod +x build.sh overlay/hooks/live/* overlay/includes.chroot/usr/local/bin/* overlay/includes.chroot/usr/local/sbin/*
-            ./build.sh 2>&1 | tee /work/build.log
+            # В файлы — только предупреждения и последние строки (полный лог может быть огромным)
+            ./build.sh 2>&1 | tee >(grep -a --line-buffered "ВНИМАНИЕ" > /work/warnings.log) \
+                                  >(tail -n 300 > /work/build-tail.log)
           '
 
       - name: Отчёт проверки GeOS
@@ -40,12 +42,11 @@ jobs:
           else
             echo "::warning title=ПРОВЕРКА GeOS::Отчёт не создан — сборка остановилась раньше"
           fi
-          if [ -f build.log ]; then
-            W=$(grep -a "ВНИМАНИЕ" build.log | sort -u | head -40 || true)
-            [ -n "$W" ] && echo "::warning title=Предупреждения сборки::$(echo "$W" | esc)"
-            if ! ls build/*.iso >/dev/null 2>&1; then
-              echo "::error title=Последние строки лога::$(tail -40 build.log | esc)"
-            fi
+          if [ -s warnings.log ]; then
+            echo "::warning title=Предупреждения сборки::$(sort -u warnings.log | head -40 | esc)"
+          fi
+          if ! ls build/*.iso >/dev/null 2>&1 && [ -f build-tail.log ]; then
+            echo "::error title=Последние строки лога::$(uniq -c build-tail.log | tail -40 | esc)"
           fi
           true
 

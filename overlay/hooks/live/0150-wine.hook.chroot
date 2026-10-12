@@ -1,6 +1,7 @@
 #!/bin/sh
 # Wine — запуск Windows-программ (.exe). 32-битная часть нужна большинству установщиков.
-set -e
 dpkg --add-architecture i386
-apt-get update
-apt-get install -y wine wine64 wine32:i386 fonts-wine
+apt-get update || true
+timeout 30m apt-get install -y wine wine64 wine32:i386 fonts-wine \
+  || echo "ВНИМАНИЕ: Wine не установился — .exe запускаться не будут"
+true

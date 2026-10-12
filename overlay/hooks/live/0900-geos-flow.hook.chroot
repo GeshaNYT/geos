@@ -11,7 +11,7 @@ apt-get update || true
 # Каждый пакет: сначала из backports, потом из основного репозитория
 inst() {
   for p in "$@"; do
-    apt-get install -y -t trixie-backports "$p" || apt-get install -y "$p" \
+    timeout 20m apt-get install -y -t trixie-backports "$p" || timeout 20m apt-get install -y "$p" \
       || echo "ВНИМАНИЕ: пакет $p не найден, пропускаю"
   done
 }
