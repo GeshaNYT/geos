@@ -10,6 +10,15 @@ cat > /etc/skel/.config/kdeglobals << 'CFG'
 ColorScheme=GeOSBlue
 AccentColor=37,99,235
 CFG
+# Аватарка GeOS вместо логотипа Debian: для новых пользователей, экрана входа и окна выключения
+A=/usr/share/geos/avatar.png
+cp "$A" /etc/skel/.face
+ln -sf .face /etc/skel/.face.icon
+mkdir -p /usr/share/sddm/faces
+cp "$A" /usr/share/sddm/faces/.face.icon
+for f in $(find /usr/share/sddm /usr/share/desktop-base /usr/share/plasma -name '*.face.icon' -o -name 'default.png' -path '*face*' 2>/dev/null); do
+  cp "$A" "$f" || true
+done
 # Ускорение: сжатие памяти и защита от зависаний
 systemctl enable zramswap.service earlyoom.service || true
 # Экран входа: обои GeOS и в теме Debian, если она осталась включённой

@@ -6,6 +6,21 @@
 grep -q "boot=live" /proc/cmdline || rm -f /etc/sddm.conf.d/geos-live.conf
 # После установки на диск ярлык «Установить GeOS» больше не нужен
 grep -q "boot=live" /proc/cmdline || rm -f /usr/share/applications/install-geos.desktop
+# Аватарка GeOS для пользователей, у которых своей нет (её видно на входе, в «Пуске» и при выключении)
+for home in /home/*; do
+  u=$(basename "$home"); id "$u" >/dev/null 2>&1 || continue
+  [ -e "$home/.face" ] || { cp /usr/share/geos/avatar.png "$home/.face"; chown "$u:" "$home/.face"; }
+  [ -e "$home/.face.icon" ] || { ln -s .face "$home/.face.icon"; chown -h "$u:" "$home/.face.icon"; }
+  mkdir -p /var/lib/AccountsService/icons /var/lib/AccountsService/users
+  if [ ! -s "/var/lib/AccountsService/icons/$u" ]; then
+    cp /usr/share/geos/avatar.png "/var/lib/AccountsService/icons/$u"
+    F="/var/lib/AccountsService/users/$u"
+    [ -f "$F" ] || printf '[User]\n' > "$F"
+    if grep -q '^Icon=' "$F"; then sed -i "s#^Icon=.*#Icon=/var/lib/AccountsService/icons/$u#" "$F"
+    else sed -i "/^\[User\]/a Icon=/var/lib/AccountsService/icons/$u" "$F"; fi
+  fi
+done
+
 grep -q '^NAME="GeOS"' /usr/lib/os-release 2>/dev/null && \
   grep -q '^NAME="GeOS"' /etc/os-release 2>/dev/null && exit 0
 EXTRA=$(grep -hE '^(IMAGE_ID|BUILD_ID)=' /etc/os-release /usr/lib/os-release 2>/dev/null | sort -u)
