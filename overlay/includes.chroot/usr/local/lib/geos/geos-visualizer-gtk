@@ -80,7 +80,7 @@ class Visualizer(Gtk.Window):
         self.target = [0.0] * BARS
         self.level = [0.0] * BARS
         self.visible_amount = 0.0
-        self.silent_frames = 0
+        self.silent_frames = 90     # при старте тишина: ничего не мигает
         self.buf = b""
 
         conf = tempfile.NamedTemporaryFile("w", suffix=".conf", delete=False)

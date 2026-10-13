@@ -120,7 +120,7 @@ class Visualizer(QWidget):
         self.target = [0.0] * BARS
         self.level = [0.0] * BARS
         self.visible_amount = 0.0   # плавное появление и исчезновение
-        self.silent_frames = 0
+        self.silent_frames = 90     # при старте тишина: ничего не мигает, ждём музыку
         self.buf = ""
 
         self.conf = tempfile.NamedTemporaryFile("w", suffix=".conf", delete=False)
@@ -223,7 +223,9 @@ def main():
     x, y = scr.x() + (scr.width() - w) // 2, scr.y() + scr.height() - h - 96
     kwin_rule(x, y, w, h)
     v = Visualizer((x, y, w, h))
-    v.show()
+    # Показываем окно чуть позже, когда KWin уже применил правило «под всеми окнами»,
+    # иначе первую секунду полоски могли оказаться поверх открытых окон
+    QTimer.singleShot(800, v.show)
     sys.exit(app.exec())
 
 
