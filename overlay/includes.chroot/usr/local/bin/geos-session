@@ -33,7 +33,9 @@ sudo -A sh -c "
   true
 " || exit 1
 
-case "$XDG_CURRENT_DESKTOP" in
+# Экран входа (SDDM) читает настройки только при своём запуске — поэтому перезапускаем его,
+# иначе он пустит обратно в старый режим. Сеанс при этом закрывается.
+sudo -A systemctl restart sddm || case "$XDG_CURRENT_DESKTOP" in
   *Hyprland*) hyprctl dispatch exit ;;
   *) dbus-send --session --type=method_call --dest=org.kde.Shutdown /Shutdown org.kde.Shutdown.logout ;;
 esac
