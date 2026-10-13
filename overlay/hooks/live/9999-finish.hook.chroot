@@ -2,3 +2,8 @@
 # Конец сборки: убираем временные настройки, чтобы в готовой системе всё работало как обычно
 rm -f /etc/apt/apt.conf.d/99geos-build
 apt-get clean
+# Установщик работает от root — даём root те же цвета и шрифты GeOS, что у пользователя
+# (здесь, в самом конце, когда kdeglobals уже собран всеми хуками)
+mkdir -p /root/.config
+[ -f /etc/skel/.config/kdeglobals ] && cp /etc/skel/.config/kdeglobals /root/.config/kdeglobals
+true

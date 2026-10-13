@@ -27,4 +27,8 @@ Presentation {
         Rectangle { anchors.fill: parent; color: "#0d1b34" }
         Text { anchors.centerIn: parent; width: parent.width * 0.8; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; color: "#e6eefa"; font.pixelSize: 22; text: "Привычные клавиши Windows:\nWin+E — проводник, Win+I — параметры,\nWin+Shift+S — снимок экрана, Ctrl+Shift+Esc — диспетчер задач." }
     }
+    Slide {
+        Rectangle { anchors.fill: parent; color: "#0d1b34" }
+        Text { anchors.centerIn: parent; width: parent.width * 0.8; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; color: "#e6eefa"; font.pixelSize: 22; text: "Когда установка закончится, выньте установочную флешку или диск.\n\nВ VirtualBox: меню «Устройства» → «Оптические диски» → «Изъять диск».\nИначе компьютер снова запустит живой режим, а не установленную GeOS." }
+    }
 }

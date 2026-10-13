@@ -62,6 +62,9 @@ fi
 # Автозапуск Debian, который сам кладёт на рабочий стол «Install Debian», — выключаем
 rm -f /etc/xdg/autostart/calamares-desktop-icon.desktop /etc/xdg/autostart/*install-debian*.desktop
 
+# Современный вид окон установщика (скругления, синие кнопки)
+[ -d "$DST" ] && cp /usr/share/geos/installer-style.qss "$DST/stylesheet.qss"
+
 # Своё слайд-шоу во время установки (строки import берём из Debian — они точно совместимы)
 if [ -f "$DST/show.qml" ]; then
   IMPORTS=$(grep '^import' "$DST/show.qml" || true)
