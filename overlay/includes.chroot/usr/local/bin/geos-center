@@ -230,7 +230,7 @@ class Center(QWidget):
                 "Hyprland" not in os.environ.get("XDG_CURRENT_DESKTOP", ""):
             actions.append(("flow", "Попробовать GeOS Flow", "Плиточные окна и плавные анимации",
                             lambda: self.run_tool(["geos-session", "flow"])))
-        installer = "/usr/share/applications/install-debian.desktop"
+        installer = "/usr/share/applications/install-geos.desktop"
         if is_live() and os.path.exists(installer):
             actions.insert(0, ("disk", "Установить GeOS", "Поставить систему на этот компьютер",
                                lambda: self.run_tool(["kioclient", "exec", installer])))

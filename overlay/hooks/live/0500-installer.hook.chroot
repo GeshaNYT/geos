@@ -6,6 +6,9 @@ DST=/etc/calamares/branding/geos
 if [ -f "$SRC/branding.desc" ]; then
   rm -rf "$DST"; cp -r "$SRC" "$DST"
   cp /usr/share/pixmaps/geos-logo.png "$DST/geos-logo.png"
+  # Картинка на первой странице установщика (у Debian там их логотип)
+  cp /usr/share/geos/installer-welcome.png "$DST/geos-welcome.png"
+  for w in "$DST"/welcome.*; do [ -f "$w" ] && cp /usr/share/geos/installer-welcome.png "$w" || true; done
   D="$DST/branding.desc"
   sed -i -E \
     -e 's/^componentName:.*/componentName:  geos/' \
@@ -16,17 +19,48 @@ if [ -f "$SRC/branding.desc" ]; then
     -e 's#^(\s*)(productUrl|releaseNotesUrl):.*#\1\2: "https://github.com/GeshaNYT/geos"#' \
     -e 's#^(\s*)(supportUrl|knownIssuesUrl):.*#\1\2: "https://github.com/GeshaNYT/geos/issues"#' \
     -e 's/^(\s*)(productLogo|productIcon):.*/\1\2: "geos-logo.png"/' \
+    -e 's/^(\s*)productWelcome:.*/\1productWelcome: "geos-welcome.png"/' \
     -e 's/^(\s*)sidebarBackground:.*/\1sidebarBackground: "#0d1b34"/' \
     -e 's/^(\s*)sidebarText:.*/\1sidebarText: "#e6eefa"/' \
     -e 's/^(\s*)sidebarTextHighlight:.*/\1sidebarTextHighlight: "#2563eb"/' \
     "$D"
   sed -i 's/^branding:.*/branding: geos/' /etc/calamares/settings.conf
 fi
-# Значок установщика
-for f in /usr/share/applications/install-debian.desktop /etc/skel/Desktop/install-debian.desktop; do
+# Значок установщика: во всех ярлыках Calamares — «Установить GeOS» и наш логотип
+for f in /usr/share/applications/*install-debian*.desktop /usr/share/applications/calamares*.desktop \
+         /etc/skel/Desktop/*.desktop; do
   [ -f "$f" ] || continue
-  sed -i -E 's/^(Name|GenericName)(\[[^]]*\])?=.*/\1\2=Установить GeOS/; s/^Icon=.*/Icon=geos-logo/' "$f"
+  grep -qi "calamares\|install-debian" "$f" || continue
+  sed -i -E \
+    -e 's/^(Name|GenericName)(\[[^]]*\])?=.*/\1\2=Установить GeOS/' \
+    -e 's/^(Comment)(\[[^]]*\])?=.*/\1\2=Поставить GeOS на этот компьютер/' \
+    -e 's/^Icon=.*/Icon=geos-logo/' \
+    -e 's/^Keywords(\[[^]]*\])?=.*//' "$f"
 done
+# Своя копия ярлыка — её кладёт на рабочий стол geos-firstrun
+SRC_DESK=$(ls /usr/share/applications/*install-debian*.desktop /usr/share/applications/calamares*.desktop 2>/dev/null | head -1)
+if [ -n "$SRC_DESK" ]; then
+  EXEC=$(sed -n 's/^Exec=//p' "$SRC_DESK" | head -1)
+  cat > /usr/share/applications/install-geos.desktop << DESK
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Установить GeOS
+Comment=Поставить GeOS на этот компьютер
+Icon=geos-logo
+Exec=$EXEC
+Terminal=false
+Categories=System;
+DESK
+  # чтобы в меню не было двух одинаковых пунктов
+  for f in /usr/share/applications/*install-debian*.desktop /usr/share/applications/calamares*.desktop; do
+    [ -f "$f" ] && ! grep -q "^NoDisplay=" "$f" && echo "NoDisplay=true" >> "$f" || true
+  done
+else
+  echo "ВНИМАНИЕ: ярлык установщика Calamares не найден"
+fi
+# Автозапуск Debian, который сам кладёт на рабочий стол «Install Debian», — выключаем
+rm -f /etc/xdg/autostart/calamares-desktop-icon.desktop /etc/xdg/autostart/*install-debian*.desktop
 
 # Своё слайд-шоу во время установки (строки import берём из Debian — они точно совместимы)
 if [ -f "$DST/show.qml" ]; then

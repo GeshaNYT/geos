@@ -65,8 +65,9 @@ Icon=user-trash
 URL=trash:/
 DSK
 cp /usr/share/applications/geos-center.desktop "$DESK/"
-if $LIVE && [ -f /usr/share/applications/install-debian.desktop ]; then
-  cp /usr/share/applications/install-debian.desktop "$DESK/install-geos.desktop"
+rm -f "$DESK"/*install-debian*.desktop "$DESK"/calamares*.desktop
+if $LIVE && [ -f /usr/share/applications/install-geos.desktop ]; then
+  cp /usr/share/applications/install-geos.desktop "$DESK/install-geos.desktop"
 fi
 chmod +x "$DESK"/*.desktop
 

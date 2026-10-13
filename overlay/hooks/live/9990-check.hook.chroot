@@ -58,6 +58,8 @@ chk "lsinitramfs '$INITRD' | grep -q 'plymouth/script.so'"   "Модуль за�
 chk "lsinitramfs '$INITRD' | grep -q 'plymouth/themes/geos/logo.png'" "Логотип заставки внутри initrd"
 chk "[ -f /usr/share/plasma/look-and-feel/org.geos.desktop/contents/splash/Splash.qml ]" "Заставка рабочего стола GeOS"
 chk "grep -q 'exit 0' /usr/bin/plasma-welcome"                "Приветствие KDE (Konqi) отключено"
+chk "grep -q geos-welcome /etc/calamares/branding/geos/branding.desc"   "Картинка GeOS в установщике (без логотипа Debian)"
+chk "grep -q 'Name=Установить GeOS' /usr/share/applications/install-geos.desktop" "Ярлык «Установить GeOS»"
 chk "ls /usr/lib/*/qt6/plugins/kwin/effects/plugins/ | grep -qi shapecorners" "Скруглённые углы окон (эффект установлен)"
 chk "! ls /etc/systemd/user/*.wants/waybar.service"           "Лишняя полоска Waybar не запускается в обычном GeOS"
 chk "[ -f /usr/share/wayland-sessions/geos-flow.desktop ]"    "Режим GeOS Flow"

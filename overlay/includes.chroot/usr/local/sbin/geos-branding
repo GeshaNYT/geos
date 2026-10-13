@@ -4,6 +4,8 @@
 
 # После установки на диск убираем настройку живого режима «после выхода сразу войти снова»
 grep -q "boot=live" /proc/cmdline || rm -f /etc/sddm.conf.d/geos-live.conf
+# После установки на диск ярлык «Установить GeOS» больше не нужен
+grep -q "boot=live" /proc/cmdline || rm -f /usr/share/applications/install-geos.desktop
 grep -q '^NAME="GeOS"' /usr/lib/os-release 2>/dev/null && \
   grep -q '^NAME="GeOS"' /etc/os-release 2>/dev/null && exit 0
 EXTRA=$(grep -hE '^(IMAGE_ID|BUILD_ID)=' /etc/os-release /usr/lib/os-release 2>/dev/null | sort -u)
