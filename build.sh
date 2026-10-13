@@ -22,7 +22,7 @@ lb config \
 
 echo "==> Добавляю файлы GeOS"
 cp -r "$HERE/overlay/." config/
-chmod +x config/hooks/live/*.hook.chroot config/includes.chroot/usr/local/bin/*
+chmod +x config/hooks/live/*.hook.chroot config/hooks/live/*.hook.binary config/includes.chroot/usr/local/bin/*
 chmod +x config/includes.chroot/usr/local/sbin/*
 
 echo "==> Синее загрузочное меню GeOS"

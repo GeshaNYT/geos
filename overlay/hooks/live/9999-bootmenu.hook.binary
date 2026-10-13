@@ -1,0 +1,44 @@
+#!/bin/sh
+# Меню загрузки ISO (самый первый экран): убираем надписи Debian и непонятное «amd64».
+# Пункты латиницей: старый загрузчик BIOS не умеет русские буквы.
+# Хук запускается уже после того, как live-build написал меню GRUB (UEFI) и ISOLINUX (BIOS).
+B=.
+[ -d binary ] && B=binary
+REPORT=../chroot/usr/share/geos/build-report.txt
+[ -d chroot ] && REPORT=chroot/usr/share/geos/build-report.txt
+
+FILES=$(find "$B/boot" "$B/isolinux" "$B/syslinux" "$B/EFI" -type f \( -name '*.cfg' -o -name 'theme.txt' \) 2>/dev/null)
+[ -n "$FILES" ] || { echo "ВНИМАНИЕ: файлы меню загрузки не найдены"; exit 0; }
+
+for f in $FILES; do
+  sed -i \
+    -e 's/Debian GNU\/Linux[^"]*Live[^"]*/GeOS/g' \
+    -e 's/Debian GNU\/Linux/GeOS/g' \
+    -e 's/Debian Live/GeOS/g' \
+    -e 's/Live system/GeOS/g' \
+    -e 's/GeOS (\([a-z0-9_]*\) fail-safe mode)/GeOS (safe mode)/g' \
+    -e 's/GeOS (\([a-z0-9_]*\) failsafe)/GeOS (safe mode)/g' \
+    -e 's/Live (\([a-z0-9_]*\) failsafe)/GeOS (safe mode)/g' \
+    -e 's/GeOS (\([a-z0-9_]*\))/Start GeOS/g' \
+    -e 's/Live (\([a-z0-9_]*\))/Start GeOS/g' \
+    -e 's/\^Live/^GeOS/g' \
+    -e 's/Boot menu/GeOS/g' \
+    -e 's/Live Boot Menu with GRUB/GeOS/g' \
+    -e 's/title-text: *".*"/title-text: "GeOS"/' \
+    -e 's/Debian/GeOS/g' \
+    "$f"
+done
+
+# Что осталось в заголовках и пунктах меню — в отчёт сборки
+LEFT=$(grep -h -i "debian" $FILES 2>/dev/null | head -5)
+ITEMS=$(grep -h -o -E '(menuentry|menu label|title-text)[^{]*' $FILES 2>/dev/null | sort -u | head -12 | tr '\n' ';')
+if [ -f "$REPORT" ]; then
+  if [ -z "$LEFT" ]; then
+    echo "[OK] Меню загрузки ISO без надписей Debian" >> "$REPORT"
+  else
+    echo "[!!] В меню загрузки осталось: $LEFT" >> "$REPORT"
+  fi
+  echo "     Пункты меню: $ITEMS" >> "$REPORT"
+fi
+[ -z "$LEFT" ] || echo "ВНИМАНИЕ: в меню загрузки осталось слово Debian: $LEFT"
+true
