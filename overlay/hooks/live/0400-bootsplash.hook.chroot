@@ -1,14 +1,9 @@
 #!/bin/sh
-# Анимация загрузки GeOS вместо «debian 13»
+# Заставка загрузки GeOS (тема на «скриптах» — со своими картинками, без зависимости от других тем)
 T=/usr/share/plymouth/themes/geos
-for f in /usr/share/plymouth/themes/spinner/*.png; do
-  [ "$(basename "$f")" = "watermark.png" ] || [ -e "$T/$(basename "$f")" ] || cp "$f" "$T/"
-done
-# Debian (desktop-base) подставляет свою тему через альтернативу default.plymouth — переключаем её на GeOS
-update-alternatives --install /usr/share/plymouth/themes/default.plymouth default.plymouth "$T/geos.plymouth" 300 || true
-update-alternatives --set default.plymouth "$T/geos.plymouth" || true
-# И явно указываем тему в настройках
 mkdir -p /etc/plymouth
 printf '[Daemon]\nTheme=geos\nShowDelay=0\nDeviceTimeout=8\n' > /etc/plymouth/plymouthd.conf
+update-alternatives --install /usr/share/plymouth/themes/default.plymouth default.plymouth "$T/geos.plymouth" 300 2>/dev/null || true
+update-alternatives --set default.plymouth "$T/geos.plymouth" 2>/dev/null || true
 plymouth-set-default-theme geos || echo "ВНИМАНИЕ: тема загрузки не применилась"
-update-initramfs -u -k all || true
+true

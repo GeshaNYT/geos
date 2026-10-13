@@ -53,6 +53,9 @@ echo "  default.plymouth -> $(readlink -f /usr/share/plymouth/themes/default.ply
 INITRD=$(ls -1 /boot/initrd.img-* 2>/dev/null | tail -1)
 chk "lsinitramfs '$INITRD' | grep -q 'plymouth/themes/geos'" "Тема загрузки GeOS внутри initrd ($INITRD)"
 chk "lsinitramfs '$INITRD' | grep -q 'plymouthd.conf'"        "Настройки заставки внутри initrd"
+chk "lsinitramfs '$INITRD' | grep -q 'plymouth/themes/geos/geos.script'" "Скрипт заставки GeOS внутри initrd"
+chk "lsinitramfs '$INITRD' | grep -q 'plymouth/script.so'"   "Модуль заставки (script) внутри initrd"
+chk "lsinitramfs '$INITRD' | grep -q 'plymouth/themes/geos/logo.png'" "Логотип заставки внутри initrd"
 chk "[ -f /usr/share/plasma/look-and-feel/org.geos.desktop/contents/splash/Splash.qml ]" "Заставка рабочего стола GeOS"
 chk "grep -q 'exit 0' /usr/bin/plasma-welcome"                "Приветствие KDE (Konqi) отключено"
 chk "ls /usr/lib/*/qt6/plugins/kwin/effects/plugins/ | grep -qi shapecorners" "Скруглённые углы окон (эффект установлен)"

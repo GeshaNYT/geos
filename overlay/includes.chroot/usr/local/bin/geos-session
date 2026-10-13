@@ -9,6 +9,10 @@ if [ "$1" = "flow" ] && [ ! -f /usr/share/wayland-sessions/geos-flow.desktop ]; 
   kdialog --title "GeOS" --error "Режим GeOS Flow не установлен в этой сборке."
   exit 1
 fi
+if [ "$1" = "flow" ] && [ "$(systemd-detect-virt 2>/dev/null)" = "oracle" ]; then
+  kdialog --title "GeOS" --sorry "GeOS Flow не работает в VirtualBox: Hyprland нужна настоящая видеокарта с ускорением.\n\nПопробуй GeOS Flow с флешки на обычном компьютере."
+  exit 0
+fi
 kdialog --title "GeOS" --yesno "Перейти в режим «$NAME»?\n\nОткрытые программы закроются — сохрани свою работу." || exit 0
 
 export SUDO_ASKPASS=/usr/local/bin/geos-askpass

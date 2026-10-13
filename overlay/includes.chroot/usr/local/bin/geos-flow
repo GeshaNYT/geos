@@ -1,5 +1,36 @@
 #!/bin/sh
-# Запуск сеанса GeOS Flow (Hyprland с настройками GeOS)
+# Запуск сеанса GeOS Flow (Hyprland с настройками GeOS).
+# Если Hyprland не может работать (нет видеоускорения, VirtualBox и т. п.) — вместо чёрного экрана
+# сразу открывается обычный GeOS, а при следующем входе снова выбирается обычный режим.
 CFG=/usr/share/geos/flow/hyprland.conf
 [ -f "$HOME/.config/hypr/hyprland.conf" ] && CFG="$HOME/.config/hypr/hyprland.conf"
-exec Hyprland --config "$CFG"
+REASON="$HOME/.cache/geos-flow-failed"
+mkdir -p "$HOME/.cache"
+
+fallback() {
+  echo "$1" > "$REASON"
+  # Следующий вход — снова в обычный GeOS (иначе в живом режиме был бы бесконечный чёрный экран)
+  sudo -n sh -c "
+    sed -i 's#^Session=.*geos-flow.desktop#Session=plasma.desktop#' /etc/sddm.conf /etc/sddm.conf.d/*.conf 2>/dev/null
+    sed -i 's#^Session=.*geos-flow.desktop#Session=/usr/share/wayland-sessions/plasma.desktop#' /var/lib/sddm/state.conf 2>/dev/null
+  " 2>/dev/null
+  EXEC=$(sed -n 's/^Exec=//p' /usr/share/wayland-sessions/plasma.desktop | head -1)
+  [ -n "$EXEC" ] || EXEC="startplasma-wayland"
+  export XDG_CURRENT_DESKTOP=KDE XDG_SESSION_DESKTOP=KDE DESKTOP_SESSION=plasma
+  # shellcheck disable=SC2086
+  exec $EXEC
+}
+
+case "$(systemd-detect-virt 2>/dev/null)" in
+  oracle) fallback "GeOS Flow не работает в VirtualBox: Hyprland нужна видеокарта с ускорением. Попробуй GeOS Flow с флешки на настоящем компьютере." ;;
+esac
+[ -e /dev/dri/renderD128 ] || fallback "GeOS Flow не запустился: не найдено видеоускорение. Нужен драйвер видеокарты."
+
+START=$(date +%s)
+Hyprland --config "$CFG"
+RC=$?
+# Hyprland упал в первые секунды — значит, не может работать на этом компьютере
+if [ "$RC" -ne 0 ] && [ $(( $(date +%s) - START )) -lt 20 ]; then
+  fallback "GeOS Flow не запустился на этой видеокарте (код $RC). Открыт обычный GeOS."
+fi
+exit "$RC"

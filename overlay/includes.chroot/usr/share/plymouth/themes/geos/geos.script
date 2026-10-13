@@ -1,0 +1,64 @@
+# Заставка загрузки GeOS: логотип, надпись и вращающийся индикатор.
+# Тема на «скриптах» использует только свои картинки — ей не нужны чужие темы.
+
+Window.SetBackgroundTopColor(0.027, 0.067, 0.165);
+Window.SetBackgroundBottomColor(0.051, 0.106, 0.204);
+
+cx = Window.GetX() + Window.GetWidth() / 2;
+cy = Window.GetY() + Window.GetHeight() / 2;
+
+logo.image = Image("logo.png");
+logo.sprite = Sprite(logo.image);
+logo.sprite.SetX(cx - logo.image.GetWidth() / 2);
+logo.sprite.SetY(cy - logo.image.GetHeight() / 2 - 50);
+
+title.image = Image("title.png");
+title.sprite = Sprite(title.image);
+title.sprite.SetX(cx - title.image.GetWidth() / 2);
+title.sprite.SetY(cy + logo.image.GetHeight() / 2 - 30);
+
+spinner.image = Image("spinner.png");
+spinner.sprite = Sprite();
+spinner.angle = 0;
+spinner.cy = Window.GetY() + Window.GetHeight() * 0.78;
+
+fun refresh_callback ()
+{
+    spinner.angle += 0.15;
+    rotated = spinner.image.Rotate(spinner.angle);
+    spinner.sprite.SetImage(rotated);
+    spinner.sprite.SetX(cx - rotated.GetWidth() / 2);
+    spinner.sprite.SetY(spinner.cy - rotated.GetHeight() / 2);
+}
+Plymouth.SetRefreshFunction(refresh_callback);
+
+# Ввод пароля (например, для зашифрованного диска)
+fun display_password_callback (prompt, bullets)
+{
+    global.pw_text = Sprite(Image.Text(prompt, 0.9, 0.93, 0.98));
+    global.pw_text.SetX(cx - global.pw_text.GetImage().GetWidth() / 2);
+    global.pw_text.SetY(spinner.cy - 70);
+    dots = "";
+    for (i = 0; i < bullets; i++)
+        dots += "●";
+    global.pw_dots = Sprite(Image.Text(dots, 0.22, 0.74, 0.97));
+    global.pw_dots.SetX(cx - global.pw_dots.GetImage().GetWidth() / 2);
+    global.pw_dots.SetY(spinner.cy - 40);
+}
+Plymouth.SetDisplayPasswordFunction(display_password_callback);
+
+fun display_normal_callback ()
+{
+    global.pw_text = NULL;
+    global.pw_dots = NULL;
+}
+Plymouth.SetDisplayNormalFunction(display_normal_callback);
+
+# Сообщения системы (например, «проверка диска») — мелко внизу
+fun message_callback (text)
+{
+    global.msg = Sprite(Image.Text(text, 0.59, 0.67, 0.78));
+    global.msg.SetX(cx - global.msg.GetImage().GetWidth() / 2);
+    global.msg.SetY(Window.GetY() + Window.GetHeight() - 40);
+}
+Plymouth.SetMessageFunction(message_callback);
