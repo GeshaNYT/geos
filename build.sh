@@ -32,6 +32,7 @@ find config/bootloaders -name 'splash.svg.in' | while read -r f; do
   rm -f "$f"; cp "$HERE/branding/splash.png" "$(dirname "$f")/splash.png"
 done
 find config/bootloaders -name 'splash.png' -exec cp "$HERE/branding/splash.png" {} \;
+cp "$HERE/branding/splash.png" config/geos-splash.png   # для хука 9999-bootmenu
 grep -rlI "Live system" config/bootloaders | xargs -r sed -i 's/Live system/GeOS/g'
 
 echo "==> Собираю ISO (30–90 минут)"

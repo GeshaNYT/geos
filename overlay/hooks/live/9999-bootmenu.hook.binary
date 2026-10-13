@@ -7,6 +7,19 @@ B=.
 REPORT=../chroot/usr/share/geos/build-report.txt
 [ -d chroot ] && REPORT=chroot/usr/share/geos/build-report.txt
 
+# Картинка меню: live-build рисует свою (жёлтая каска и «Debian GNU/Linux 13»), заменяем на GeOS
+SPLASH=""
+for c in ../config/geos-splash.png config/geos-splash.png; do [ -f "$c" ] && SPLASH="$c" && break; done
+SPL_N=0
+if [ -n "$SPLASH" ]; then
+  for p in $(find "$B" -path "$B/live" -prune -o -type f -iname 'splash*.png' -print 2>/dev/null); do
+    cp "$SPLASH" "$p" && SPL_N=$((SPL_N+1))
+  done
+  for p in $(find "$B" -path "$B/live" -prune -o -type f -iname 'splash*.svg' -print 2>/dev/null); do rm -f "$p"; done
+else
+  echo "ВНИМАНИЕ: картинка меню загрузки GeOS не найдена"
+fi
+
 FILES=$(find "$B/boot" "$B/isolinux" "$B/syslinux" "$B/EFI" -type f \( -name '*.cfg' -o -name 'theme.txt' \) 2>/dev/null)
 [ -n "$FILES" ] || { echo "ВНИМАНИЕ: файлы меню загрузки не найдены"; exit 0; }
 
@@ -39,6 +52,8 @@ if [ -f "$REPORT" ]; then
     echo "[!!] В меню загрузки осталось: $LEFT" >> "$REPORT"
   fi
   echo "     Пункты меню: $ITEMS" >> "$REPORT"
+  if [ "$SPL_N" -gt 0 ]; then echo "[OK] Картинка меню загрузки GeOS (заменено файлов: $SPL_N)" >> "$REPORT"
+  else echo "[!!] Картинка меню загрузки не заменена" >> "$REPORT"; fi
 fi
 [ -z "$LEFT" ] || echo "ВНИМАНИЕ: в меню загрузки осталось слово Debian: $LEFT"
 true
