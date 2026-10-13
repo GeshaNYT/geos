@@ -7,12 +7,11 @@ grep -qs "boot=live" /proc/cmdline || exit 0
 # Устройство, с которого запущен живой режим
 DEV=$(awk '$2 ~ "^/run/live/medium$|^/lib/live/mount/medium$" {print $1; exit}' /proc/mounts)
 [ -n "$DEV" ] || DEV=$(blkid -L GeOS 2>/dev/null)
-BASE=$(echo "$DEV" | sed -e 's|^/dev/||' -e 's|[0-9]*$||')
 
-case "$BASE" in
-  sr*)
+case "$DEV" in
+  /dev/sr*)
     # Диск (в VirtualBox — ISO в приводе): просто вынимаем его, и загрузится установленная GeOS
-    eject -m "/dev/$BASE" >/dev/null 2>&1 && exit 0
+    eject -m "$DEV" >/dev/null 2>&1 && exit 0
     ;;
 esac
 

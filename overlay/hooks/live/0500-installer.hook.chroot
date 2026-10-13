@@ -54,7 +54,7 @@ Categories=System;
 DESK
   # чтобы в меню не было двух одинаковых пунктов
   for f in /usr/share/applications/*install-debian*.desktop /usr/share/applications/calamares*.desktop; do
-    [ -f "$f" ] && ! grep -q "^NoDisplay=" "$f" && echo "NoDisplay=true" >> "$f" || true
+    [ -f "$f" ] && ! grep -q "^NoDisplay=" "$f" && sed -i '/^\[Desktop Entry\]/a NoDisplay=true' "$f" || true
   done
 else
   echo "ВНИМАНИЕ: ярлык установщика Calamares не найден"
