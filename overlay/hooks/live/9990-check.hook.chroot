@@ -61,6 +61,7 @@ chk "grep -q 'exit 0' /usr/bin/plasma-welcome"                "Приветст�
 chk "grep -q geos-welcome /etc/calamares/branding/geos/branding.desc"   "Картинка GeOS в установщике (без логотипа Debian)"
 chk "grep -q 'Name=Установить GeOS' /usr/share/applications/install-geos.desktop" "Ярлык «Установить GeOS»"
 chk "[ -f /etc/calamares/branding/geos/stylesheet.qss ]"   "Современный вид установщика"
+chk "grep -q geos-install-reboot /etc/calamares/modules/finished.conf" "После установки диск вынимается сам"
 chk "cmp -s /etc/skel/.face /usr/share/geos/avatar.png"          "Аватарка GeOS для пользователей"
 chk "ls /usr/lib/*/qt6/plugins/kwin/effects/plugins/ | grep -qi shapecorners" "Скруглённые углы окон (эффект установлен)"
 chk "! ls /etc/systemd/user/*.wants/waybar.service"           "Лишняя полоска Waybar не запускается в обычном GeOS"

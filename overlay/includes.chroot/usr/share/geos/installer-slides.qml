@@ -29,6 +29,6 @@ Presentation {
     }
     Slide {
         Rectangle { anchors.fill: parent; color: "#0d1b34" }
-        Text { anchors.centerIn: parent; width: parent.width * 0.8; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; color: "#e6eefa"; font.pixelSize: 22; text: "Когда установка закончится, выньте установочную флешку или диск.\n\nВ VirtualBox: меню «Устройства» → «Оптические диски» → «Изъять диск».\nИначе компьютер снова запустит живой режим, а не установленную GeOS." }
+        Text { anchors.centerIn: parent; width: parent.width * 0.8; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; color: "#e6eefa"; font.pixelSize: 22; text: "Когда установка закончится, оставьте галочку «Перезагрузить сейчас» и нажмите «Готово».\n\nУстановочный диск вынется сам, а если вы ставили с флешки — GeOS попросит её вынуть." }
     }
 }

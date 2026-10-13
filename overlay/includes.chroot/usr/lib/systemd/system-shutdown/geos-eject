@@ -1,0 +1,28 @@
+#!/bin/bash
+# Самый конец перезагрузки после установки GeOS (все программы уже закрыты).
+# Обычное выключение живого режима не трогаем — оно остаётся быстрым, без вопросов.
+[ -e /dev/.geos-installed ] || exit 0
+grep -qs "boot=live" /proc/cmdline || exit 0
+
+# Устройство, с которого запущен живой режим
+DEV=$(awk '$2 ~ "^/run/live/medium$|^/lib/live/mount/medium$" {print $1; exit}' /proc/mounts)
+[ -n "$DEV" ] || DEV=$(blkid -L GeOS 2>/dev/null)
+BASE=$(echo "$DEV" | sed -e 's|^/dev/||' -e 's|[0-9]*$||')
+
+case "$BASE" in
+  sr*)
+    # Диск (в VirtualBox — ISO в приводе): просто вынимаем его, и загрузится установленная GeOS
+    eject -m "/dev/$BASE" >/dev/null 2>&1 && exit 0
+    ;;
+esac
+
+# Флешку компьютер вынуть сам не может — просим человека
+MSG="Установка GeOS завершена. Выньте установочную флешку или диск и нажмите Enter"
+if command -v plymouth >/dev/null 2>&1 && plymouth --ping 2>/dev/null; then
+  plymouth message --text="$MSG"
+  timeout 300 plymouth watch-keystroke >/dev/null 2>&1
+else
+  printf '\n\n  %s\n' "$MSG" > /dev/console
+  read -t 300 _ < /dev/console 2>/dev/null
+fi
+exit 0

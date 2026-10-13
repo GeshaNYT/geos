@@ -37,3 +37,4 @@ curl
 ca-certificates
 gnupg
 lxc
+eject

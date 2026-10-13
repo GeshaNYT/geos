@@ -62,6 +62,14 @@ fi
 # Автозапуск Debian, который сам кладёт на рабочий стол «Install Debian», — выключаем
 rm -f /etc/xdg/autostart/calamares-desktop-icon.desktop /etc/xdg/autostart/*install-debian*.desktop
 
+# Кнопка «Перезагрузить сейчас» в конце установки: через geos-install-reboot,
+# чтобы при перезагрузке вынуть установочный диск (иначе снова запустится живой режим)
+FIN=/etc/calamares/modules/finished.conf
+mkdir -p /etc/calamares/modules
+[ -f "$FIN" ] || : > "$FIN"
+sed -i -E '/^(restartNowCommand|restartNowMode|restartNowEnabled|restartNowChecked):/d' "$FIN"
+printf 'restartNowMode: user-checked\nrestartNowCommand: "/usr/local/sbin/geos-install-reboot"\n' >> "$FIN"
+
 # Современный вид окон установщика (скругления, синие кнопки)
 [ -d "$DST" ] && cp /usr/share/geos/installer-style.qss "$DST/stylesheet.qss"
 
