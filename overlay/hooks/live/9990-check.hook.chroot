@@ -63,6 +63,7 @@ chk "grep -q 'Name=Установить GeOS' /usr/share/applications/install-ge
 chk "[ -f /etc/calamares/branding/geos/stylesheet.qss ]"   "Современный вид установщика"
 chk "grep -q geos-install-reboot /etc/calamares/modules/finished.conf" "После установки диск вынимается сам"
 chk "cmp -s /etc/skel/.face /usr/share/geos/avatar.png"          "Аватарка GeOS для пользователей"
+chk "grep -q xdg/kscreenlockerrc /usr/local/sbin/geos-branding" "Пробный режим: экран не блокируется"
 chk "ls /usr/lib/*/qt6/plugins/kwin/effects/plugins/ | grep -qi shapecorners" "Скруглённые углы окон (эффект установлен)"
 chk "! ls /etc/systemd/user/*.wants/waybar.service"           "Лишняя полоска Waybar не запускается в обычном GeOS"
 chk "[ -f /usr/share/wayland-sessions/geos-flow.desktop ]"    "Режим GeOS Flow"
