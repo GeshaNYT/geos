@@ -82,6 +82,12 @@ if $LIVE; then
 fi
 
 touch "$FLAG"
+# Пункт «Install GeOS» в меню загрузки: сразу открываем установщик, без приветствия и Центра
+if $LIVE && grep -qw "geos-install" /proc/cmdline && [ -f /usr/share/applications/install-geos.desktop ]; then
+  sleep 2
+  kioclient exec /usr/share/applications/install-geos.desktop &
+  exit 0
+fi
 notify-send -a "GeOS" -i geos-logo "Добро пожаловать в GeOS" \
   "Открываю Центр GeOS: там программы в один клик. .apk и .exe запускаются двойным кликом.$HINT"
 /usr/local/bin/geos-center &

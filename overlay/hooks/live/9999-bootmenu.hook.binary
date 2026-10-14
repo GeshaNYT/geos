@@ -42,6 +42,66 @@ for f in $FILES; do
     "$f"
 done
 
+# Пункт «Install GeOS»: копия «Start GeOS» с параметром geos-install (сразу открывается установщик)
+# и удаление пунктов установщика Debian — его в GeOS нет, эти пункты не работают
+for f in $FILES; do
+  case "$f" in
+    *isolinux*|*syslinux*)
+      grep -q "Start GeOS" "$f" || continue
+      awk '
+        function flush() {
+          if (blk == "") return
+          printf "%s", blk
+          if (blk ~ /Start GeOS/ && blk !~ /geos-install/) {
+            n = split(blk, L, "\n"); out = ""
+            for (i = 1; i < n; i++) {
+              l = L[i]
+              if (l ~ /^label /) l = "label geos-install"
+              else if (l ~ /menu label/) sub(/\^?Start GeOS/, "^Install GeOS", l)
+              else if (l ~ /menu default/) continue
+              else if (l ~ /^[ \t]*append /) l = l " geos-install"
+              out = out l "\n"
+            }
+            printf "\n%s", out
+          }
+          blk = ""
+        }
+        /^label / { flush() }
+        { blk = blk $0 "\n" }
+        END { flush() }
+      ' "$f" > "$f.new" && mv "$f.new" "$f"
+      ;;
+    *)
+      # GRUB: блоки menuentry "..." { ... }
+      awk '
+        function flush() {
+          if (blk == "") return
+          if (title ~ /Alternate (graphical|textual) installer|Graphical install|^Install$|Text install/) { blk = ""; return }
+          printf "%s", blk
+          if (title == "Start GeOS" && blk !~ /geos-install/) {
+            c = blk
+            sub(/"Start GeOS"/, "\"Install GeOS\"", c)
+            gsub(/--hotkey=l/, "--hotkey=i", c)
+            n = split(c, L, "\n"); out = ""
+            for (i = 1; i < n; i++) { l = L[i]; if (l ~ /^[ \t]*linux[ \t]/) l = l " geos-install"; out = out l "\n" }
+            printf "%s", out
+          }
+          blk = ""
+        }
+        inb == 0 && /^[ \t]*menuentry[ \t]+"/ {
+          t = $0; sub(/^[ \t]*menuentry[ \t]+"/, "", t); sub(/".*/, "", t); title = t
+          inb = 1; blk = $0 "\n"
+          if ($0 ~ /}[ \t]*$/ && $0 ~ /{/) { inb = 0; flush() }
+          next
+        }
+        inb == 1 { blk = blk $0 "\n"; if ($0 ~ /^[ \t]*}[ \t]*$/) { inb = 0; flush() }; next }
+        { print }
+        END { if (blk != "") printf "%s", blk }
+      ' "$f" > "$f.new" && mv "$f.new" "$f"
+      ;;
+  esac
+done
+
 # Что осталось в заголовках и пунктах меню — в отчёт сборки
 LEFT=$(grep -h -i "debian" $FILES 2>/dev/null | head -5)
 ITEMS=$(grep -h -o -E '(menuentry|menu label|title-text)[^{]*' $FILES 2>/dev/null | sort -u | head -12 | tr '\n' ';')
