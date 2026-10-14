@@ -6,12 +6,11 @@
 grep -q "boot=live" /proc/cmdline || rm -f /etc/sddm.conf.d/geos-live.conf
 # Пробный режим (с флешки или ISO): экран не блокируется — пароль никто не задавал.
 # Пишем в общие настройки до входа, чтобы блокировщик с самого начала их видел.
-# В установленной системе файл убираем: там блокировка работает как обычно.
-if grep -q "boot=live" /proc/cmdline; then
+# В этом же файле лежат обои экрана блокировки, поэтому только дописываем строки, не перезаписывая.
+# В установленную систему эти строки не попадают (установщик копирует систему без изменений пробного режима).
+if grep -q "boot=live" /proc/cmdline && ! grep -qs '^Autolock=' /etc/xdg/kscreenlockerrc; then
   mkdir -p /etc/xdg
-  printf '[Daemon]\nAutolock=false\nLockOnResume=false\nTimeout=0\n' > /etc/xdg/kscreenlockerrc
-else
-  rm -f /etc/xdg/kscreenlockerrc
+  printf '\n[Daemon]\nAutolock=false\nLockOnResume=false\n' >> /etc/xdg/kscreenlockerrc
 fi
 # После установки на диск ярлык «Установить GeOS» больше не нужен
 grep -q "boot=live" /proc/cmdline || rm -f /usr/share/applications/install-geos.desktop
