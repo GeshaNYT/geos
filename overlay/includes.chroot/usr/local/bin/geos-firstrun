@@ -27,7 +27,7 @@ for (var i = 0; i < ps.length; i++) {
   var t = p.widgets("org.kde.plasma.icontasks");
   for (var j = 0; j < t.length; j++) {
     t[j].currentConfigGroup = ["General"];
-    t[j].writeConfig("launchers", "applications:org.kde.dolphin.desktop,applications:firefox-esr.desktop,applications:geos-center.desktop,applications:org.kde.discover.desktop,applications:systemsettings.desktop");
+    t[j].writeConfig("launchers", ["applications:org.kde.dolphin.desktop", "applications:firefox-esr.desktop", "applications:geos-center.desktop", "applications:org.kde.discover.desktop", "applications:systemsettings.desktop"]);
   }
   var c = p.widgets("org.kde.plasma.digitalclock");
   for (var j = 0; j < c.length; j++) {

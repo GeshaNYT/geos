@@ -409,8 +409,18 @@ class Center(QWidget):
             self.set_state(app_id, "install" if ok else "open")
             self.status.setText(f"{name} удалён" if ok else f"Не удалось удалить {name}")
         if not ok:
-            QMessageBox.warning(self, "Ошибка", f"Не получилось: {name}.\n"
-                                "Проверь интернет и попробуй ещё раз.\n\n" + err[-400:])
+            low = err.lower()
+            if "недостаточно места" in low or "no space" in low or "not enough space" in low or "insufficient" in low:
+                if is_live():
+                    why = ("Не хватило места. GeOS сейчас запущена с флешки (живой режим): "
+                           "программы ставятся прямо в оперативную память, и её мало.\n\n"
+                           "Установи GeOS на диск — там места хватит. Или выбери программу поменьше.")
+                else:
+                    why = "Не хватило места на диске. Освободи место («Очистка диска» во вкладке «Система») и попробуй ещё раз."
+                QMessageBox.warning(self, "Мало места", f"Не получилось установить {name}.\n\n{why}")
+            else:
+                QMessageBox.warning(self, "Ошибка", f"Не получилось: {name}.\n"
+                                    "Проверь интернет и попробуй ещё раз.\n\n" + err[-400:])
         self.next_job()
 
     # ---------- вкладка «Система» ----------
