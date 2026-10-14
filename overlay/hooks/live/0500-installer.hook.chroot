@@ -23,7 +23,17 @@ if [ -f "$SRC/branding.desc" ]; then
     -e 's/^(\s*)sidebarBackground:.*/\1sidebarBackground: "#0d1b34"/' \
     -e 's/^(\s*)sidebarText:.*/\1sidebarText: "#e6eefa"/' \
     -e 's/^(\s*)sidebarTextHighlight:.*/\1sidebarTextHighlight: "#2563eb"/' \
+    -e 's/^(\s*)sidebarBackgroundCurrent:.*/\1sidebarBackgroundCurrent: "#2563eb"/' \
+    -e 's/^(\s*)sidebarTextCurrent:.*/\1sidebarTextCurrent: "#ffffff"/' \
+    -e 's/^(\s*)sidebarSelect:.*/\1sidebarSelect: "#2563eb"/' \
+    -e 's/^(\s*)sidebarTextSelect:.*/\1sidebarTextSelect: "#ffffff"/' \
     "$D"
+  # Короче приветствие: «Добро пожаловать в программу установки GeOS» без слова Calamares,
+  # картинка своего размера, а не на пол-окна
+  for kv in "welcomeStyleCalamares: false" "welcomeExpandingLogo: false"; do
+    k=${kv%%:*}
+    if grep -q "^$k:" "$D"; then sed -i "s/^$k:.*/$kv/" "$D"; else printf '\n%s\n' "$kv" >> "$D"; fi
+  done
   sed -i 's/^branding:.*/branding: geos/' /etc/calamares/settings.conf
 fi
 # Значок установщика: во всех ярлыках Calamares — «Установить GeOS» и наш логотип
@@ -69,6 +79,14 @@ mkdir -p /etc/calamares/modules
 [ -f "$FIN" ] || : > "$FIN"
 sed -i -E '/^(restartNowCommand|restartNowMode|restartNowEnabled|restartNowChecked):/d' "$FIN"
 printf 'restartNowMode: user-checked\nrestartNowCommand: "/usr/local/sbin/geos-install-reboot"\n' >> "$FIN"
+
+# Первая страница без лишних ссылок (поддержка, известные проблемы, примечания к выпуску)
+W=/etc/calamares/modules/welcome.conf
+if [ -f "$W" ]; then
+  for k in showSupportUrl showKnownIssuesUrl showReleaseNotesUrl showDonateUrl; do
+    if grep -q "^$k:" "$W"; then sed -i "s/^$k:.*/$k: false/" "$W"; else echo "$k: false" >> "$W"; fi
+  done
+fi
 
 # Современный вид окон установщика (скругления, синие кнопки)
 [ -d "$DST" ] && cp /usr/share/geos/installer-style.qss "$DST/stylesheet.qss"
