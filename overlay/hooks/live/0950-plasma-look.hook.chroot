@@ -9,6 +9,11 @@ if [ -d "$SRC" ]; then
   rm -rf "$DST/contents/splash"; mkdir -p "$DST/contents/splash/images"
   cp /usr/share/geos/splash/Splash.qml "$DST/contents/splash/Splash.qml"
   cp /usr/share/geos/splash/geos-logo.png "$DST/contents/splash/images/geos-logo.png"
+  # Те же картинки, что у заставки загрузки системы — две заставки выглядят как одна
+  for i in logo title spinner; do
+    cp /usr/share/plymouth/themes/geos/$i.png "$DST/contents/splash/images/$i.png" || \
+      echo "ВНИМАНИЕ: нет картинки $i.png для заставки рабочего стола"
+  done
   python3 - "$DST/metadata.json" << 'PY'
 import json, sys
 p = sys.argv[1]

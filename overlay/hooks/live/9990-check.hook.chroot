@@ -56,7 +56,7 @@ chk "lsinitramfs '$INITRD' | grep -q 'plymouthd.conf'"        "Настройк�
 chk "lsinitramfs '$INITRD' | grep -q 'plymouth/themes/geos/geos.script'" "Скрипт заставки GeOS внутри initrd"
 chk "lsinitramfs '$INITRD' | grep -q 'plymouth/script.so'"   "Модуль заставки (script) внутри initrd"
 chk "lsinitramfs '$INITRD' | grep -q 'plymouth/themes/geos/logo.png'" "Логотип заставки внутри initrd"
-chk "[ -f /usr/share/plasma/look-and-feel/org.geos.desktop/contents/splash/Splash.qml ]" "Заставка рабочего стола GeOS"
+chk "[ -f /usr/share/plasma/look-and-feel/org.geos.desktop/contents/splash/Splash.qml ] && [ -f /usr/share/plasma/look-and-feel/org.geos.desktop/contents/splash/images/spinner.png ]" "Заставка рабочего стола GeOS (как заставка загрузки)"
 chk "grep -q 'exit 0' /usr/bin/plasma-welcome"                "Приветствие KDE (Konqi) отключено"
 chk "grep -q geos-welcome /etc/calamares/branding/geos/branding.desc"   "Картинка GeOS в установщике (без логотипа Debian)"
 chk "grep -q 'Name=Установить GeOS' /usr/share/applications/install-geos.desktop" "Ярлык «Установить GeOS»"
