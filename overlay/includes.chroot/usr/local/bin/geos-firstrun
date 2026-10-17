@@ -84,11 +84,39 @@ if $LIVE; then
 fi
 
 touch "$FLAG"
-# Пункт «Install GeOS» в меню загрузки: сразу открываем установщик, без приветствия и Центра
+# Пункт «Install GeOS» в меню загрузки — режим установки, как в Windows:
+# установщик на весь экран (без рамки, панели и рабочего стола за ним),
+# а если его закрыть — спрашиваем, что делать дальше
 if $LIVE && grep -qw "geos-install" /proc/cmdline && [ -f /usr/share/applications/install-geos.desktop ]; then
-  sleep 2
-  kioclient exec /usr/share/applications/install-geos.desktop &
-  exit 0
+  RID=geos-installer
+  RULES=$(kreadconfig6 --file kwinrulesrc --group General --key rules)
+  IDS=$(printf '%s' "$RULES" | tr ',' '\n' | grep -v -x -e "$RID" -e '' | tr '\n' ',')
+  IDS="${IDS}${RID}"
+  kwriteconfig6 --file kwinrulesrc --group General --key rules "$IDS"
+  kwriteconfig6 --file kwinrulesrc --group General --key count "$(printf '%s' "$IDS" | tr ',' '\n' | grep -c .)"
+  for kv in "Description=Установщик GeOS на весь экран" "wmclass=calamares" "wmclassmatch=2" \
+            "fullscreen=true" "fullscreenrule=2" "above=true" "aboverule=2" \
+            "skiptaskbar=true" "skiptaskbarrule=2"; do
+    kwriteconfig6 --file kwinrulesrc --group "$RID" --key "${kv%%=*}" "${kv#*=}"
+  done
+  dbus-send --session --type=method_call --dest=org.kde.KWin /KWin org.kde.KWin.reconfigure 2>/dev/null || true
+
+  EXEC=$(sed -n 's/^Exec=//p' /usr/share/applications/install-geos.desktop | head -1 | sed 's/ %[a-zA-Z]//g')
+  sleep 1
+  sh -c "$EXEC"
+
+  # Установщик закрыт без перезагрузки — выбор, что дальше
+  NEXT=$(kdialog --title "GeOS" --menu "Установщик закрыт. Что сделать?" \
+          poweroff "Выключить компьютер" reboot "Перезагрузить" try "Попробовать GeOS (пробный режим)")
+  case "$NEXT" in
+    poweroff) systemctl poweroff; exit 0 ;;
+    reboot)   systemctl reboot; exit 0 ;;
+  esac
+  # «Попробовать» — обычный пробный режим: убираем правило «на весь экран» и показываем приветствие
+  kwriteconfig6 --file kwinrulesrc --group General --key rules "$(printf '%s' "$RULES")"
+  kwriteconfig6 --file kwinrulesrc --group General --key count "$(printf '%s' "$RULES" | tr ',' '\n' | grep -c .)"
+  kwriteconfig6 --file kwinrulesrc --group "$RID" --key fullscreenrule 0
+  dbus-send --session --type=method_call --dest=org.kde.KWin /KWin org.kde.KWin.reconfigure 2>/dev/null || true
 fi
 notify-send -a "GeOS" -i geos-logo "Добро пожаловать в GeOS" \
   "Открываю Центр GeOS: там программы в один клик. .apk и .exe запускаются двойным кликом.$HINT"
