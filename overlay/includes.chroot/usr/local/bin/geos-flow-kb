@@ -1,0 +1,9 @@
+#!/bin/sh
+# GeOS Flow: раскладки клавиатуры — те же, что выбраны для системы (в установщике)
+[ -f /etc/default/keyboard ] && . /etc/default/keyboard
+L=${XKBLAYOUT:-us}
+# Для нелатинских раскладок добавляем английскую, иначе не набрать адрес сайта или пароль
+case ",$L," in *,us,*) ;; *) L="$L,us" ;; esac
+B="keyword input:kb_layout $L ; keyword input:kb_options ${XKBOPTIONS:-grp:alt_shift_toggle}"
+[ -n "$XKBVARIANT" ] && B="$B ; keyword input:kb_variant $XKBVARIANT"
+hyprctl --batch "$B" >/dev/null

@@ -16,7 +16,7 @@ case "$DEV" in
 esac
 
 # Флешку компьютер вынуть сам не может — просим человека
-MSG="Установка GeOS завершена. Выньте установочную флешку или диск и нажмите Enter"
+MSG="GeOS is installed. Remove the installation USB stick or disc and press Enter"
 if command -v plymouth >/dev/null 2>&1 && plymouth --ping 2>/dev/null; then
   plymouth message --text="$MSG"
   timeout 300 plymouth watch-keystroke >/dev/null 2>&1

@@ -1,3 +1,6 @@
 #!/bin/sh
 # Подсказка по клавишам GeOS Flow (Win+F1)
-fuzzel --config /usr/share/geos/flow/fuzzel.ini --dmenu --prompt "Клавиши ❯ " --lines 24 --width 56 < /usr/share/geos/flow/keys.txt >/dev/null
+. /usr/local/lib/geos/i18n.sh
+K=/usr/share/geos/flow/keys.txt
+[ "$GEOS_LANG" = "ru" ] && K=/usr/share/geos/flow/keys.ru.txt
+fuzzel --config /usr/share/geos/flow/fuzzel.ini --dmenu --prompt "$(T "Shortcuts" "Клавиши") ❯ " --lines 24 --width 56 < "$K" >/dev/null

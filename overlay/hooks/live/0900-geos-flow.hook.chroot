@@ -45,7 +45,8 @@ rm -f /usr/share/dbus-1/services/fr.emersion.mako.service
 cat > /usr/share/wayland-sessions/geos-flow.desktop << 'DSK'
 [Desktop Entry]
 Name=GeOS Flow
-Comment=Плиточный режим GeOS с плавными анимациями
+Comment=Tiling GeOS mode with smooth animations
+Comment[ru]=Плиточный режим GeOS с плавными анимациями
 Exec=/usr/local/bin/geos-flow
 Type=Application
 DesktopNames=Hyprland
@@ -57,8 +58,8 @@ done
 # Классический режим на экране входа называется просто «GeOS»
 f=/usr/share/wayland-sessions/plasma.desktop
 if [ -f "$f" ]; then
-  sed -i -E '/^Name\[/d; s/^Name=.*/Name=GeOS/; /^Comment\[/d; s/^Comment=.*/Comment=Классический рабочий стол GeOS/' "$f"
+  sed -i -E '/^Name\[/d; s/^Name=.*/Name=GeOS/; /^Comment\[/d; s/^Comment=.*/Comment=Classic GeOS desktop\nComment[ru]=Классический рабочий стол GeOS/' "$f"
 fi
 f=/usr/share/xsessions/plasmax11.desktop
-[ -f "$f" ] && sed -i -E '/^Name\[/d; s/^Name=.*/Name=GeOS (X11, для старых видеокарт)/' "$f"
+[ -f "$f" ] && sed -i -E '/^Name\[/d; s/^Name=.*/Name=GeOS (X11, for old graphics cards)\nName[ru]=GeOS (X11, для старых видеокарт)/' "$f"
 true

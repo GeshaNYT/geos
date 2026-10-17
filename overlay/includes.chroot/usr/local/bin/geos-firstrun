@@ -1,5 +1,6 @@
 #!/bin/sh
 # Первый вход: оформление и привычные по Windows настройки. Потом всё можно поменять в «Параметрах».
+. /usr/local/lib/geos/i18n.sh
 FLAG="$HOME/.config/geos-firstrun-done"
 [ -f "$FLAG" ] && exit 0
 sleep 5
@@ -53,14 +54,14 @@ mkdir -p "$DESK"
 cat > "$DESK/computer.desktop" << DSK
 [Desktop Entry]
 Type=Link
-Name=Этот компьютер
+Name=$(T "This PC" "Этот компьютер")
 Icon=computer
 URL=file:///
 DSK
 cat > "$DESK/trash.desktop" << DSK
 [Desktop Entry]
 Type=Link
-Name=Корзина
+Name=$(T "Trash" "Корзина")
 Icon=user-trash
 URL=trash:/
 DSK
@@ -80,7 +81,7 @@ if $LIVE; then
   dbus-send --session --type=method_call --dest=org.freedesktop.ScreenSaver /ScreenSaver org.kde.screensaver.configure 2>/dev/null || true
   # Автообновления в живом режиме бессмысленны (всё сбросится) и мешают выключению
   kwriteconfig6 --file PlasmaDiscoverUpdates --group Global --key UseUnattendedUpdates false
-  HINT=" Пароль в живом режиме: live."
+  HINT=" $(T "Live mode password: live." "Пароль в живом режиме: live.")"
 fi
 
 touch "$FLAG"
@@ -94,7 +95,7 @@ if $LIVE && grep -qw "geos-install" /proc/cmdline && [ -f /usr/share/application
   IDS="${IDS}${RID}"
   kwriteconfig6 --file kwinrulesrc --group General --key rules "$IDS"
   kwriteconfig6 --file kwinrulesrc --group General --key count "$(printf '%s' "$IDS" | tr ',' '\n' | grep -c .)"
-  for kv in "Description=Установщик GeOS на весь экран" "wmclass=calamares" "wmclassmatch=2" \
+  for kv in "Description=GeOS installer fullscreen" "wmclass=calamares" "wmclassmatch=2" \
             "fullscreen=true" "fullscreenrule=2" "above=true" "aboverule=2" \
             "skiptaskbar=true" "skiptaskbarrule=2"; do
     kwriteconfig6 --file kwinrulesrc --group "$RID" --key "${kv%%=*}" "${kv#*=}"
@@ -106,8 +107,9 @@ if $LIVE && grep -qw "geos-install" /proc/cmdline && [ -f /usr/share/application
   sh -c "$EXEC"
 
   # Установщик закрыт без перезагрузки — выбор, что дальше
-  NEXT=$(kdialog --title "GeOS" --menu "Установщик закрыт. Что сделать?" \
-          poweroff "Выключить компьютер" reboot "Перезагрузить" try "Попробовать GeOS (пробный режим)")
+  NEXT=$(kdialog --title "GeOS" --menu "$(T "The installer was closed. What next?" "Установщик закрыт. Что сделать?")" \
+          poweroff "$(T "Shut down" "Выключить компьютер")" reboot "$(T "Restart" "Перезагрузить")" \
+          try "$(T "Try GeOS (live mode)" "Попробовать GeOS (пробный режим)")")
   case "$NEXT" in
     poweroff) systemctl poweroff; exit 0 ;;
     reboot)   systemctl reboot; exit 0 ;;
@@ -118,6 +120,6 @@ if $LIVE && grep -qw "geos-install" /proc/cmdline && [ -f /usr/share/application
   kwriteconfig6 --file kwinrulesrc --group "$RID" --key fullscreenrule 0
   dbus-send --session --type=method_call --dest=org.kde.KWin /KWin org.kde.KWin.reconfigure 2>/dev/null || true
 fi
-notify-send -a "GeOS" -i geos-logo "Добро пожаловать в GeOS" \
-  "Открываю Центр GeOS: там программы в один клик. .apk и .exe запускаются двойным кликом.$HINT"
+notify-send -a "GeOS" -i geos-logo "$(T "Welcome to GeOS" "Добро пожаловать в GeOS")" \
+  "$(T "Opening GeOS Center: apps in one click. .apk and .exe files open with a double click." "Открываю Центр GeOS: там программы в один клик. .apk и .exe запускаются двойным кликом.")$HINT"
 /usr/local/bin/geos-center &

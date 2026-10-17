@@ -1,8 +1,11 @@
 [Desktop Entry]
 Type=Application
-Name=Центр GeOS
-Comment=Программы в один клик и настройки системы
+Name=GeOS Center
+Name[ru]=Центр GeOS
+Comment=Apps in one click and system settings
+Comment[ru]=Программы в один клик и настройки системы
 Exec=/usr/local/bin/geos-center
 Icon=geos-logo
 Categories=System;Settings;
-Keywords=apps;install;steam;discord;приложения;установить;
+Keywords=apps;install;steam;discord;store;
+Keywords[ru]=apps;install;steam;discord;приложения;установить;

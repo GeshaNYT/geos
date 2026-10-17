@@ -1,6 +1,7 @@
 [Sound Theme]
 Name=GeOS
-Comment=Мягкие звуки GeOS
+Comment=Soft GeOS sounds
+Comment[ru]=Мягкие звуки GeOS
 Inherits=ocean,freedesktop
 Directories=stereo
 

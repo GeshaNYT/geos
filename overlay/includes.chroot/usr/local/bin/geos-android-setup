@@ -1,39 +1,40 @@
 #!/bin/bash
 # Подготовка Android (Waydroid). Ход работы показывает окно geos-task.
+. /usr/local/lib/geos/i18n.sh
 step() { echo "::step $*"; }
 ok()   { echo "::ok $*"; }
 warn() { echo "::warn $*"; }
 fail() { echo "::fail $*"; exit 1; }
 
-command -v waydroid >/dev/null || fail "Waydroid не установлен"
+command -v waydroid >/dev/null || fail "$(T "Waydroid is not installed" "Waydroid не установлен")"
 
-step "Проверяю, скачан ли Android"
+step "$(T "Checking whether Android is downloaded" "Проверяю, скачан ли Android")"
 if [ ! -s /var/lib/waydroid/images/system.img ]; then
-  ok "Нужно скачать Android (~1,5 ГБ)"
-  step "Скачиваю Android — обычно 5–20 минут"
-  sudo -A waydroid init -f -s GAPPS 2>&1 || fail "Не удалось скачать Android. Проверь интернет и попробуй ещё раз."
-  ok "Android скачан"
+  ok "$(T "Android needs to be downloaded (~1.5 GB)" "Нужно скачать Android (~1,5 ГБ)")"
+  step "$(T "Downloading Android — usually 5–20 minutes" "Скачиваю Android — обычно 5–20 минут")"
+  sudo -A waydroid init -f -s GAPPS 2>&1 || fail "$(T "Could not download Android. Check your internet connection and try again." "Не удалось скачать Android. Проверь интернет и попробуй ещё раз.")"
+  ok "$(T "Android downloaded" "Android скачан")"
 else
-  ok "Android уже скачан"
+  ok "$(T "Android is already downloaded" "Android уже скачан")"
 fi
 
 # В виртуалке или без видеоускорения Android запускается только с программной отрисовкой
 if systemd-detect-virt -q || [ ! -e /dev/dri/renderD128 ]; then
-  step "Нет ускорения графики — включаю программную отрисовку"
+  step "$(T "No graphics acceleration — enabling software rendering" "Нет ускорения графики — включаю программную отрисовку")"
   CFG=/var/lib/waydroid/waydroid.cfg
   if ! grep -q "ro.hardware.egl = swiftshader" "$CFG"; then
     grep -q "^\[properties\]" "$CFG" || echo "[properties]" | sudo -A tee -a "$CFG" >/dev/null
     sudo -A sed -i '/^\[properties\]/a ro.hardware.gralloc = default\nro.hardware.egl = swiftshader' "$CFG"
     sudo -A waydroid upgrade --offline >/dev/null 2>&1
   fi
-  warn "Программная отрисовка включена — Android будет работать медленнее"
+  warn "$(T "Software rendering is on — Android will run slower" "Программная отрисовка включена — Android будет работать медленнее")"
 fi
 
-step "Запускаю контейнер Android"
-sudo -A systemctl enable --now waydroid-container >/dev/null 2>&1 || fail "Не удалось запустить контейнер Android"
+step "$(T "Starting the Android container" "Запускаю контейнер Android")"
+sudo -A systemctl enable --now waydroid-container >/dev/null 2>&1 || fail "$(T "Could not start the Android container" "Не удалось запустить контейнер Android")"
 ok
 
-step "Запускаю Android (первый раз до 2–3 минут)"
+step "$(T "Starting Android (up to 2–3 minutes the first time)" "Запускаю Android (первый раз до 2–3 минут)")"
 if ! waydroid status 2>/dev/null | grep -q "RUNNING"; then
   nohup waydroid session start >/dev/null 2>&1 &
   for _ in $(seq 1 90); do
@@ -42,7 +43,7 @@ if ! waydroid status 2>/dev/null | grep -q "RUNNING"; then
   done
 fi
 waydroid status 2>/dev/null | grep -q "RUNNING" || \
-  fail "Android не запустился. В виртуалке это частая проблема — на обычном компьютере работает лучше."
-ok "Android запущен"
+  fail "$(T "Android did not start. This often happens in a virtual machine — it works better on a real computer." "Android не запустился. В виртуалке это частая проблема — на обычном компьютере работает лучше.")"
+ok "$(T "Android is running" "Android запущен")"
 
-echo "::done Готово! Теперь .apk открываются двойным кликом, а Android-приложения появляются в меню «Пуск»."
+echo "::done $(T "Done! .apk files now open with a double click, and Android apps appear in the Start menu." "Готово! Теперь .apk открываются двойным кликом, а Android-приложения появляются в меню «Пуск».")"

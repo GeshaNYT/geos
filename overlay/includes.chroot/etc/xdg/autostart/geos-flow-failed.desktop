@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=GeOS Flow — сообщение
-Exec=sh -c 'f="$HOME/.cache/geos-flow-failed"; [ -f "$f" ] && sleep 6 && notify-send -a GeOS -i dialog-warning "GeOS Flow не запустился" "$(cat "$f")" && rm -f "$f"'
+Name=GeOS Flow notice
+Exec=/usr/local/bin/geos-flow-failed-note
 OnlyShowIn=KDE;
 NoDisplay=true

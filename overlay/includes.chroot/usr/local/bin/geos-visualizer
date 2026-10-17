@@ -68,7 +68,7 @@ def kwin_rule(x, y, w, h):
     w_("General", "rules", ",".join(ids))
     w_("General", "count", len(ids))
     for key, val in {
-        "Description": "Визуализатор GeOS", "wmclass": APP_ID, "wmclassmatch": 1,
+        "Description": "GeOS Visualizer", "wmclass": APP_ID, "wmclassmatch": 1,
         "below": "true", "belowrule": 2, "skiptaskbar": "true", "skiptaskbarrule": 2,
         "skippager": "true", "skippagerrule": 2, "skipswitcher": "true", "skipswitcherrule": 2,
         "noborder": "true", "noborderrule": 2, "acceptfocus": "false", "acceptfocusrule": 2,
@@ -87,7 +87,7 @@ def enable():
     else:
         os.makedirs(os.path.dirname(AUTOSTART), exist_ok=True)
         with open(AUTOSTART, "w") as f:
-            f.write("[Desktop Entry]\nType=Application\nName=Визуализатор GeOS\n"
+            f.write("[Desktop Entry]\nType=Application\nName=GeOS Visualizer\n"
                     f"Exec=/usr/local/bin/{APP_ID}\nOnlyShowIn=KDE;\nNoDisplay=true\n")
     if not running_pids():
         subprocess.Popen([f"/usr/local/bin/{APP_ID}"], start_new_session=True,
@@ -111,7 +111,7 @@ def disable():
 class Visualizer(QWidget):
     def __init__(self, geometry):
         super().__init__()
-        self.setWindowTitle("Визуализатор GeOS")
+        self.setWindowTitle("GeOS Visualizer")
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnBottomHint
                             | Qt.WindowType.WindowTransparentForInput | Qt.WindowType.WindowDoesNotAcceptFocus)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -196,7 +196,7 @@ def main():
         disable() if is_enabled() else enable()
         return
     if not shutil.which("cava"):
-        print("cava не установлен")
+        print("cava is not installed")
         sys.exit(1)
     if FLOW:
         # Hyprland не умеет «окно под всеми окнами», поэтому там полоски рисует отдельная

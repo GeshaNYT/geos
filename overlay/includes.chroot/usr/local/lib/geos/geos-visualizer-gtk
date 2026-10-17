@@ -52,7 +52,7 @@ def rounded_rect(cr, x, y, w, h, r):
 
 class Visualizer(Gtk.Window):
     def __init__(self):
-        super().__init__(title="Визуализатор GeOS")
+        super().__init__(title="GeOS Visualizer")
         GtkLayerShell.init_for_window(self)
         GtkLayerShell.set_namespace(self, "geos-visualizer")
         GtkLayerShell.set_layer(self, GtkLayerShell.Layer.BOTTOM)

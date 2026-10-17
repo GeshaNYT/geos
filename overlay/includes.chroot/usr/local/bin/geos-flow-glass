@@ -1,10 +1,11 @@
 #!/bin/sh
 # Win+O: переключить «стеклянные» полупрозрачные окна и обычные непрозрачные
+. /usr/local/lib/geos/i18n.sh
 CUR=$(hyprctl getoption decoration:inactive_opacity | awk '/float/ {print $2}')
 if [ "${CUR%%.*}" = "1" ]; then
   hyprctl --batch "keyword decoration:active_opacity 0.94 ; keyword decoration:inactive_opacity 0.86" >/dev/null
-  notify-send -a "GeOS" -i geos-logo -t 2000 "Стеклянные окна включены"
+  notify-send -a "GeOS" -i geos-logo -t 2000 "$(T "Glass windows on" "Стеклянные окна включены")"
 else
   hyprctl --batch "keyword decoration:active_opacity 1.0 ; keyword decoration:inactive_opacity 1.0" >/dev/null
-  notify-send -a "GeOS" -i geos-logo -t 2000 "Окна непрозрачные"
+  notify-send -a "GeOS" -i geos-logo -t 2000 "$(T "Windows are opaque" "Окна непрозрачные")"
 fi

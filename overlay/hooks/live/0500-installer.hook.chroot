@@ -46,8 +46,9 @@ for f in /usr/share/applications/*install-debian*.desktop /usr/share/application
   [ -f "$f" ] || continue
   grep -qi "calamares\|install-debian" "$f" || continue
   sed -i -E \
-    -e 's/^(Name|GenericName)(\[[^]]*\])?=.*/\1\2=Установить GeOS/' \
-    -e 's/^(Comment)(\[[^]]*\])?=.*/\1\2=Поставить GeOS на этот компьютер/' \
+    -e '/^(Name|GenericName|Comment)\[/d' \
+    -e 's/^(Name|GenericName)=.*/\1=Install GeOS/' \
+    -e 's/^Comment=.*/Comment=Install GeOS on this computer/' \
     -e 's/^Icon=.*/Icon=geos-logo/' \
     -e 's/^Keywords(\[[^]]*\])?=.*//' "$f"
 done
@@ -59,8 +60,10 @@ if [ -n "$SRC_DESK" ]; then
 [Desktop Entry]
 Type=Application
 Version=1.0
-Name=Установить GeOS
-Comment=Поставить GeOS на этот компьютер
+Name=Install GeOS
+Name[ru]=Установить GeOS
+Comment=Install GeOS on this computer
+Comment[ru]=Поставить GeOS на этот компьютер
 Icon=geos-logo
 Exec=$EXEC
 Terminal=false

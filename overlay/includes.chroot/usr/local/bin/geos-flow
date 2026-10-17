@@ -2,6 +2,7 @@
 # Запуск сеанса GeOS Flow (Hyprland с настройками GeOS).
 # Если Hyprland не может работать (нет видеоускорения, VirtualBox и т. п.) — вместо чёрного экрана
 # сразу открывается обычный GeOS, а при следующем входе снова выбирается обычный режим.
+. /usr/local/lib/geos/i18n.sh
 CFG=/usr/share/geos/flow/hyprland.conf
 [ -f "$HOME/.config/hypr/hyprland.conf" ] && CFG="$HOME/.config/hypr/hyprland.conf"
 REASON="$HOME/.cache/geos-flow-failed"
@@ -22,15 +23,15 @@ fallback() {
 }
 
 case "$(systemd-detect-virt 2>/dev/null)" in
-  oracle) fallback "GeOS Flow не работает в VirtualBox: Hyprland нужна видеокарта с ускорением. Попробуй GeOS Flow с флешки на настоящем компьютере." ;;
+  oracle) fallback "$(T "GeOS Flow does not work in VirtualBox: Hyprland needs a graphics card with acceleration. Try GeOS Flow from a USB stick on a real computer." "GeOS Flow не работает в VirtualBox: Hyprland нужна видеокарта с ускорением. Попробуй GeOS Flow с флешки на настоящем компьютере.")" ;;
 esac
-[ -e /dev/dri/renderD128 ] || fallback "GeOS Flow не запустился: не найдено видеоускорение. Нужен драйвер видеокарты."
+[ -e /dev/dri/renderD128 ] || fallback "$(T "GeOS Flow did not start: no graphics acceleration found. A graphics driver is needed." "GeOS Flow не запустился: не найдено видеоускорение. Нужен драйвер видеокарты.")"
 
 START=$(date +%s)
 Hyprland --config "$CFG"
 RC=$?
 # Hyprland упал в первые секунды — значит, не может работать на этом компьютере
 if [ "$RC" -ne 0 ] && [ $(( $(date +%s) - START )) -lt 20 ]; then
-  fallback "GeOS Flow не запустился на этой видеокарте (код $RC). Открыт обычный GeOS."
+  fallback "$(T "GeOS Flow did not start on this graphics card (code $RC). Regular GeOS was opened." "GeOS Flow не запустился на этой видеокарте (код $RC). Открыт обычный GeOS.")"
 fi
 exit "$RC"

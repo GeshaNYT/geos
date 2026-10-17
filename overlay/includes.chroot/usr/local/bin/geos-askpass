@@ -5,23 +5,26 @@ import sys
 from PyQt6.QtWidgets import QApplication, QDialog, QHBoxLayout, QLineEdit, QPushButton, QVBoxLayout
 
 import geos_ui as ui
+from geos_i18n import tr
 
 app = QApplication(sys.argv)
 ui.apply(app, "geos-center")
 dlg = QDialog()
-dlg.setWindowTitle("GeOS — нужно разрешение")
+dlg.setWindowTitle(tr("GeOS — permission needed", ru="GeOS — нужно разрешение"))
 dlg.setFixedWidth(440)
 lay = QVBoxLayout(dlg)
 lay.setContentsMargins(24, 20, 24, 20)
 lay.setSpacing(14)
-head, _ = ui.header("shield", "Нужен пароль", "Это действие меняет систему. Введи пароль своей учётной записи.", 48)
+head, _ = ui.header("shield", tr("Password required", ru="Нужен пароль"),
+                    tr("This action changes the system. Enter your account password.",
+                       ru="Это действие меняет систему. Введи пароль своей учётной записи."), 48)
 lay.addLayout(head)
-pw = QLineEdit(echoMode=QLineEdit.EchoMode.Password, placeholderText="Пароль")
+pw = QLineEdit(echoMode=QLineEdit.EchoMode.Password, placeholderText=tr("Password", ru="Пароль"))
 lay.addWidget(pw)
 row = QHBoxLayout()
 row.addStretch()
-cancel = QPushButton("Отмена", objectName="flat")
-ok = QPushButton("Продолжить")
+cancel = QPushButton(tr("Cancel", ru="Отмена"), objectName="flat")
+ok = QPushButton(tr("Continue", ru="Продолжить"))
 ok.setDefault(True)
 row.addWidget(cancel)
 row.addWidget(ok)

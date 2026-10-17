@@ -28,7 +28,7 @@
         ],
         "custom/geos": {
             "format": " ",
-            "tooltip-format": "Меню (Win)",
+            "tooltip-format": "Menu (Win)",
             "on-click": "fuzzel --config /usr/share/geos/flow/fuzzel.ini",
             "on-click-right": "geos-center"
         },
@@ -51,8 +51,7 @@
         "clock": {
             "format": "{:%H:%M}",
             "format-alt": "{:%A, %d %B}",
-            "tooltip-format": "<tt>{calendar}</tt>",
-            "locale": "ru_RU.UTF-8"
+            "tooltip-format": "<tt>{calendar}</tt>"
         },
         "tray": {
             "icon-size": 18,
@@ -77,8 +76,8 @@
         },
         "network": {
             "format-wifi": "📶 {essid}",
-            "format-ethernet": "🌐 Сеть",
-            "format-disconnected": "⚠ Нет сети",
+            "format-ethernet": "🌐 Network",
+            "format-disconnected": "⚠ No network",
             "tooltip-format": "{ifname}: {ipaddr}",
             "on-click": "kcmshell6 kcm_networkmanagement"
         },
@@ -98,7 +97,7 @@
         },
         "custom/power": {
             "format": "⏻",
-            "tooltip-format": "Выключение и выход",
+            "tooltip-format": "Power and log out",
             "on-click": "/usr/local/bin/geos-flow-power"
         },
         "name": "geos-panel",
@@ -122,7 +121,6 @@
         ],
         "clock#big": {
             "format": "<span size='64pt' weight='800'>{:%H:%M}</span>\n<span size='15pt' foreground='#96aac8'>{:%A, %d %B}</span>",
-            "locale": "ru_RU.UTF-8",
             "interval": 10,
             "tooltip": false,
             "justify": "center"

@@ -1,0 +1,8 @@
+#!/bin/sh
+# Если GeOS Flow не запустился и нас вернуло в обычный режим — объясняем почему
+. /usr/local/lib/geos/i18n.sh
+f="$HOME/.cache/geos-flow-failed"
+[ -f "$f" ] || exit 0
+sleep 6
+notify-send -a GeOS -i dialog-warning "$(T "GeOS Flow did not start" "GeOS Flow не запустился")" "$(cat "$f")"
+rm -f "$f"

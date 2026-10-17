@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import (
 )
 
 import geos_ui as ui
+from geos_i18n import tr
 
 LOGO = ui.LOGO
 FLATHUB = "https://dl.flathub.org/repo/flathub.flatpakrepo"
@@ -30,64 +31,80 @@ LOCAL_ICON_DIRS = [
 ICON_SIZE = 48
 COLUMNS = 3
 
+# Категории: внутренний ключ → название на языке системы
+CATEGORY_NAMES = {
+    "all": tr("All", ru="Все"), "games": tr("Games", ru="Игры"), "chat": tr("Social", ru="Общение"),
+    "internet": tr("Internet", ru="Интернет"), "office": tr("Office", ru="Офис"),
+    "creative": tr("Creative", ru="Творчество"), "media": tr("Media", ru="Мультимедиа"),
+    "dev": tr("Development", ru="Разработка"), "utils": tr("Utilities", ru="Утилиты"),
+}
 # (категория, название, описание, Flatpak ID)
 APPS = [
-    ("Игры", "Steam", "Тысячи игр, в том числе для Windows", "com.valvesoftware.Steam"),
-    ("Игры", "Prism Launcher", "Minecraft с модами: Fabric, NeoForge", "org.prismlauncher.PrismLauncher"),
-    ("Игры", "Heroic", "Игры из Epic Games и GOG", "com.heroicgameslauncher.hgl"),
-    ("Общение", "Discord", "Голосовой чат и сообщества", "com.discordapp.Discord"),
-    ("Общение", "Telegram", "Мессенджер", "org.telegram.desktop"),
-    ("Общение", "Zoom", "Видеозвонки и конференции", "us.zoom.Zoom"),
-    ("Общение", "Thunderbird", "Почта и календарь", "org.mozilla.Thunderbird"),
-    ("Интернет", "Google Chrome", "Браузер от Google", "com.google.Chrome"),
-    ("Интернет", "Brave", "Быстрый браузер с блокировкой рекламы", "com.brave.Browser"),
-    ("Интернет", "qBittorrent", "Скачивание торрентов", "org.qbittorrent.qBittorrent"),
-    ("Интернет", "AnyDesk", "Удалённый доступ к компьютеру", "com.anydesk.Anydesk"),
-    ("Офис", "OnlyOffice", "Документы как в Microsoft Office", "org.onlyoffice.desktopeditors"),
-    ("Офис", "LibreOffice", "Документы, таблицы, презентации", "org.libreoffice.LibreOffice"),
-    ("Творчество", "GIMP", "Редактор изображений, как Photoshop", "org.gimp.GIMP"),
-    ("Творчество", "Krita", "Цифровое рисование", "org.kde.krita"),
-    ("Творчество", "Kdenlive", "Монтаж видео", "org.kde.kdenlive"),
-    ("Творчество", "Blender", "3D-моделирование и анимация", "org.blender.Blender"),
-    ("Творчество", "OBS Studio", "Запись экрана и стримы", "com.obsproject.Studio"),
-    ("Мультимедиа", "Spotify", "Музыка", "com.spotify.Client"),
-    ("Мультимедиа", "VLC", "Видеоплеер для любых форматов", "org.videolan.VLC"),
-    ("Разработка", "VS Code", "Редактор кода", "com.visualstudio.code"),
-    ("Разработка", "Godot", "Движок для создания игр", "org.godotengine.Godot"),
-    ("Утилиты", "Bottles", "Удобный запуск Windows-программ", "com.usebottles.bottles"),
-    ("Утилиты", "Impression", "Запись ISO-образов на флешку", "io.gitlab.adhami3310.Impression"),
+    ("games", "Steam", tr("Thousands of games, including Windows ones", ru="Тысячи игр, в том числе для Windows"), "com.valvesoftware.Steam"),
+    ("games", "Prism Launcher", tr("Minecraft with mods: Fabric, NeoForge", ru="Minecraft с модами: Fabric, NeoForge"), "org.prismlauncher.PrismLauncher"),
+    ("games", "Heroic", tr("Games from Epic Games and GOG", ru="Игры из Epic Games и GOG"), "com.heroicgameslauncher.hgl"),
+    ("chat", "Discord", tr("Voice chat and communities", ru="Голосовой чат и сообщества"), "com.discordapp.Discord"),
+    ("chat", "Telegram", tr("Messenger", ru="Мессенджер"), "org.telegram.desktop"),
+    ("chat", "Zoom", tr("Video calls and meetings", ru="Видеозвонки и конференции"), "us.zoom.Zoom"),
+    ("chat", "Thunderbird", tr("Mail and calendar", ru="Почта и календарь"), "org.mozilla.Thunderbird"),
+    ("internet", "Google Chrome", tr("Browser by Google", ru="Браузер от Google"), "com.google.Chrome"),
+    ("internet", "Brave", tr("Fast browser with ad blocking", ru="Быстрый браузер с блокировкой рекламы"), "com.brave.Browser"),
+    ("internet", "qBittorrent", tr("Torrent downloads", ru="Скачивание торрентов"), "org.qbittorrent.qBittorrent"),
+    ("internet", "AnyDesk", tr("Remote access to a computer", ru="Удалённый доступ к компьютеру"), "com.anydesk.Anydesk"),
+    ("office", "OnlyOffice", tr("Documents like Microsoft Office", ru="Документы как в Microsoft Office"), "org.onlyoffice.desktopeditors"),
+    ("office", "LibreOffice", tr("Documents, spreadsheets, presentations", ru="Документы, таблицы, презентации"), "org.libreoffice.LibreOffice"),
+    ("creative", "GIMP", tr("Image editor, like Photoshop", ru="Редактор изображений, как Photoshop"), "org.gimp.GIMP"),
+    ("creative", "Krita", tr("Digital painting", ru="Цифровое рисование"), "org.kde.krita"),
+    ("creative", "Kdenlive", tr("Video editing", ru="Монтаж видео"), "org.kde.kdenlive"),
+    ("creative", "Blender", tr("3D modeling and animation", ru="3D-моделирование и анимация"), "org.blender.Blender"),
+    ("creative", "OBS Studio", tr("Screen recording and streaming", ru="Запись экрана и стримы"), "com.obsproject.Studio"),
+    ("media", "Spotify", tr("Music", ru="Музыка"), "com.spotify.Client"),
+    ("media", "VLC", tr("Video player for any format", ru="Видеоплеер для любых форматов"), "org.videolan.VLC"),
+    ("dev", "VS Code", tr("Code editor", ru="Редактор кода"), "com.visualstudio.code"),
+    ("dev", "Godot", tr("Game engine", ru="Движок для создания игр"), "org.godotengine.Godot"),
+    ("utils", "Bottles", tr("Easy way to run Windows programs", ru="Удобный запуск Windows-программ"), "com.usebottles.bottles"),
+    ("utils", "Impression", tr("Write ISO images to a USB stick", ru="Запись ISO-образов на флешку"), "io.gitlab.adhami3310.Impression"),
 ]
 # Своя иконка категории — пока не загрузилась настоящая иконка программы
-CATEGORY_ICONS = {"Игры": "games", "Общение": "chat", "Интернет": "internet", "Офис": "office",
-                  "Творчество": "creative", "Мультимедиа": "media", "Разработка": "dev", "Утилиты": "utils"}
-CATEGORIES = ["Все"] + sorted({a[0] for a in APPS}, key=[a[0] for a in APPS].index)
+CATEGORY_ICONS = {"games": "games", "chat": "chat", "internet": "internet", "office": "office",
+                  "creative": "creative", "media": "media", "dev": "dev", "utils": "utils"}
+CATEGORIES = ["all"] + sorted({a[0] for a in APPS}, key=[a[0] for a in APPS].index)
 
 # (иконка, название, описание, команда)
 SYSTEM = [
-    ("update", "Обновления", "Обновить систему и программы", ["plasma-discover", "--mode", "update"]),
-    ("cleanup", "Очистка диска", "Удалить мусор и освободить место", ["geos-task", "cleanup"]),
-    ("taskmgr", "Диспетчер задач", "Процессы и нагрузка (Ctrl+Shift+Esc)", ["plasma-systemmonitor"]),
-    ("android", "Включить Android", "Подготовить запуск .apk (скачает ~1,5 ГБ)",
+    ("update", tr("Updates", ru="Обновления"), tr("Update the system and apps", ru="Обновить систему и программы"),
+     ["plasma-discover", "--mode", "update"]),
+    ("cleanup", tr("Disk Cleanup", ru="Очистка диска"), tr("Remove junk and free up space", ru="Удалить мусор и освободить место"),
+     ["geos-task", "cleanup"]),
+    ("taskmgr", tr("Task Manager", ru="Диспетчер задач"), tr("Processes and load (Ctrl+Shift+Esc)", ru="Процессы и нагрузка (Ctrl+Shift+Esc)"),
+     ["plasma-systemmonitor"]),
+    ("android", tr("Enable Android", ru="Включить Android"),
+     tr("Prepare to run .apk files (downloads ~1.5 GB)", ru="Подготовить запуск .apk (скачает ~1,5 ГБ)"),
      ["geos-task", "android"]),
-    ("exe", "Windows-программы", "Настройки запуска .exe (Wine)",
+    ("exe", tr("Windows Programs", ru="Windows-программы"), tr(".exe launch settings (Wine)", ru="Настройки запуска .exe (Wine)"),
      ["sh", "-c", "/usr/local/bin/geos-wine-setup; winecfg"]),
-    ("phone", "Связь с телефоном", "Файлы, уведомления и буфер обмена", ["kdeconnect-app"]),
-    ("snapshot", "Снимки системы", "Откат системы, если что-то сломалось", ["timeshift-launcher"]),
-    ("printer", "Принтеры", "Подключить принтер или сканер", ["systemsettings", "kcm_printer_manager"]),
-    ("shield", "Брандмауэр", "Защита от входящих подключений", ["systemsettings", "kcm_firewall"]),
-    ("disk", "Диски", "Разделы и форматирование", ["partitionmanager"]),
-    ("settings", "Параметры", "Все настройки системы (Win+I)", ["systemsettings"]),
-    ("store", "Все приложения", "Магазин Discover: тысячи программ", ["plasma-discover"]),
+    ("phone", tr("Phone Link", ru="Связь с телефоном"), tr("Files, notifications and clipboard", ru="Файлы, уведомления и буфер обмена"),
+     ["kdeconnect-app"]),
+    ("snapshot", tr("System Snapshots", ru="Снимки системы"), tr("Roll back if something breaks", ru="Откат системы, если что-то сломалось"),
+     ["timeshift-launcher"]),
+    ("printer", tr("Printers", ru="Принтеры"), tr("Connect a printer or scanner", ru="Подключить принтер или сканер"),
+     ["systemsettings", "kcm_printer_manager"]),
+    ("shield", tr("Firewall", ru="Брандмауэр"), tr("Protection from incoming connections", ru="Защита от входящих подключений"),
+     ["systemsettings", "kcm_firewall"]),
+    ("disk", tr("Disks", ru="Диски"), tr("Partitions and formatting", ru="Разделы и форматирование"), ["partitionmanager"]),
+    ("settings", tr("Settings", ru="Параметры"), tr("All system settings (Win+I)", ru="Все настройки системы (Win+I)"),
+     ["systemsettings"]),
+    ("store", tr("All Apps", ru="Все приложения"), tr("Discover store: thousands of apps", ru="Магазин Discover: тысячи программ"),
+     ["plasma-discover"]),
 ]
 
-
-
 SHORTCUTS = [
-    ("Win", "Меню «Пуск» и поиск"), ("Win+E", "Проводник"),
-    ("Win+I", "Параметры"), ("Win+V", "История буфера обмена"),
-    ("Win+Shift+S", "Снимок области экрана"), ("Win+.", "Эмодзи"),
-    ("Win+Space", "Сменить раскладку"), ("Ctrl+Shift+Esc", "Диспетчер задач"),
-    ("Win+← / →", "Окно на половину экрана"), ("Win+D", "Показать рабочий стол"),
+    ("Win", tr("Start menu and search", ru="Меню «Пуск» и поиск")), ("Win+E", tr("File manager", ru="Проводник")),
+    ("Win+I", tr("Settings", ru="Параметры")), ("Win+V", tr("Clipboard history", ru="История буфера обмена")),
+    ("Win+Shift+S", tr("Screenshot of an area", ru="Снимок области экрана")), ("Win+.", tr("Emoji", ru="Эмодзи")),
+    ("Win+Space", tr("Switch keyboard layout", ru="Сменить раскладку")), ("Ctrl+Shift+Esc", tr("Task Manager", ru="Диспетчер задач")),
+    ("Win+← / →", tr("Snap window to half the screen", ru="Окно на половину экрана")),
+    ("Win+D", tr("Show desktop", ru="Показать рабочий стол")),
 ]
 
 
@@ -104,7 +121,7 @@ def user_name():
         full = pwd.getpwuid(os.getuid()).pw_gecos.split(",")[0].strip()
     except KeyError:
         full = ""
-    return full or os.environ.get("USER", "друг")
+    return full or os.environ.get("USER", tr("friend", ru="друг"))
 
 
 def system_summary():
@@ -116,12 +133,12 @@ def system_summary():
         pass
     try:
         kb = int(next(l.split()[1] for l in open("/proc/meminfo") if l.startswith("MemTotal")))
-        parts.append(f"{kb / 1048576:.0f} ГБ памяти")
+        parts.append(tr("{n} GB RAM", ru="{n} ГБ памяти").format(n=f"{kb / 1048576:.0f}"))
     except (OSError, StopIteration, ValueError):
         pass
     try:
         st = os.statvfs(os.path.expanduser("~"))
-        parts.append(f"{st.f_bavail * st.f_frsize / 1024**3:.0f} ГБ свободно")
+        parts.append(tr("{n} GB free", ru="{n} ГБ свободно").format(n=f"{st.f_bavail * st.f_frsize / 1024**3:.0f}"))
     except OSError:
         pass
     return "GeOS 1.0  ·  " + "  ·  ".join(parts)
@@ -181,27 +198,28 @@ def scroll(widget):
 class Center(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Центр GeOS")
+        self.setWindowTitle(tr("GeOS Center", ru="Центр GeOS"))
         self.setWindowIcon(QIcon(LOGO))
         self.resize(1000, 720)
         self.queue = []
         self.proc = None
         self.buttons, self.removers, self.icon_labels, self.cards = {}, {}, {}, []
-        self.category = "Все"
+        self.category = "all"
         self.net = QNetworkAccessManager(self)
         os.makedirs(CACHE, exist_ok=True)
 
         root = QVBoxLayout(self)
         root.setContentsMargins(24, 20, 24, 20)
 
-        head, self.status = ui.header("logo", "Центр GeOS", "Программы в один клик — без терминала")
+        head, self.status = ui.header("logo", tr("GeOS Center", ru="Центр GeOS"),
+                                       tr("Apps in one click — no terminal needed", ru="Программы в один клик — без терминала"))
         root.addLayout(head)
 
         tabs = QTabWidget()
         self.tabs = tabs
-        tabs.addTab(self.home_tab(), "Главная")
-        tabs.addTab(self.apps_tab(), "Приложения")
-        tabs.addTab(self.system_tab(), "Система")
+        tabs.addTab(self.home_tab(), tr("Home", ru="Главная"))
+        tabs.addTab(self.apps_tab(), tr("Apps", ru="Приложения"))
+        tabs.addTab(self.system_tab(), tr("System", ru="Система"))
         root.addWidget(tabs)
 
     # ---------- вкладка «Главная» ----------
@@ -212,7 +230,8 @@ class Center(QWidget):
         lay.setSpacing(16)
 
         name = user_name()
-        greeting = "Добро пожаловать в GeOS!" if name.lower() in ("geos", "geosuser") else f"Привет, {name}!"
+        greeting = (tr("Welcome to GeOS!", ru="Добро пожаловать в GeOS!") if name.lower() in ("geos", "geosuser")
+                    else tr("Hi, {name}!", ru="Привет, {name}!").format(name=name))
         hello = QLabel(greeting, objectName="big")
         lay.addWidget(hello)
         lay.addWidget(QLabel(system_summary(), objectName="desc"))
@@ -220,30 +239,35 @@ class Center(QWidget):
         quick = QGridLayout()
         quick.setSpacing(14)
         actions = [
-            ("store", "Установить программы", "Steam, Discord, Telegram и ещё 20+", lambda: self.tabs.setCurrentIndex(1)),
-            ("android", "Android-приложения", "Открывай .apk двойным кликом", lambda: self.run_tool(["geos-task", "android"])),
-            ("phone", "Связь с телефоном", "Файлы и уведомления с телефона", lambda: self.run_tool(["kdeconnect-app"])),
-            ("update", "Обновления", "Свежие версии системы и программ",
+            ("store", tr("Install Apps", ru="Установить программы"), tr("Steam, Discord, Telegram and 20+ more", ru="Steam, Discord, Telegram и ещё 20+"),
+             lambda: self.tabs.setCurrentIndex(1)),
+            ("android", tr("Android Apps", ru="Android-приложения"), tr("Open .apk files with a double click", ru="Открывай .apk двойным кликом"),
+             lambda: self.run_tool(["geos-task", "android"])),
+            ("phone", tr("Phone Link", ru="Связь с телефоном"), tr("Files and notifications from your phone", ru="Файлы и уведомления с телефона"),
+             lambda: self.run_tool(["kdeconnect-app"])),
+            ("update", tr("Updates", ru="Обновления"), tr("Latest versions of the system and apps", ru="Свежие версии системы и программ"),
              lambda: self.run_tool(["plasma-discover", "--mode", "update"])),
         ]
         if os.path.exists("/usr/share/wayland-sessions/geos-flow.desktop") and \
                 "Hyprland" not in os.environ.get("XDG_CURRENT_DESKTOP", ""):
-            actions.append(("flow", "Попробовать GeOS Flow", "Плиточные окна и плавные анимации",
+            actions.append(("flow", tr("Try GeOS Flow", ru="Попробовать GeOS Flow"),
+                            tr("Tiling windows and smooth animations", ru="Плиточные окна и плавные анимации"),
                             lambda: self.run_tool(["geos-session", "flow"])))
         installer = "/usr/share/applications/install-geos.desktop"
         if is_live() and os.path.exists(installer):
-            actions.insert(0, ("disk", "Установить GeOS", "Поставить систему на этот компьютер",
+            actions.insert(0, ("disk", tr("Install GeOS", ru="Установить GeOS"),
+                               tr("Install the system on this computer", ru="Поставить систему на этот компьютер"),
                                lambda: self.run_tool(["kioclient", "exec", installer])))
         cols = 2 if len(actions) == 4 else 3
         for i, (icon, name, desc, fn) in enumerate(actions[:6]):
-            btn = QPushButton("Открыть")
+            btn = QPushButton(tr("Open", ru="Открыть"))
             btn.clicked.connect(fn)
             frame, _ = card(icon, name, desc, btn)
             frame.setFixedHeight(170)
             quick.addWidget(frame, i // cols, i % cols)
         lay.addLayout(quick)
 
-        lay.addWidget(QLabel("Полезные клавиши", objectName="name"))
+        lay.addWidget(QLabel(tr("Useful shortcuts", ru="Полезные клавиши"), objectName="name"))
         keys = QGridLayout()
         keys.setHorizontalSpacing(18)
         keys.setVerticalSpacing(8)
@@ -264,15 +288,15 @@ class Center(QWidget):
         lay = QVBoxLayout(page)
         lay.setContentsMargins(0, 8, 0, 0)
 
-        self.search = QLineEdit(placeholderText="Поиск программы…")
+        self.search = QLineEdit(placeholderText=tr("Search apps…", ru="Поиск программы…"))
         self.search.textChanged.connect(self.refilter)
         lay.addWidget(self.search)
 
         chips = QHBoxLayout()
         group = QButtonGroup(self)
         for cat in CATEGORIES:
-            b = QPushButton(cat, objectName="chip", checkable=True)
-            b.setChecked(cat == "Все")
+            b = QPushButton(CATEGORY_NAMES.get(cat, cat), objectName="chip", checkable=True)
+            b.setChecked(cat == "all")
             b.clicked.connect(lambda _, c=cat: self.set_category(c))
             group.addButton(b)
             chips.addWidget(b)
@@ -282,8 +306,8 @@ class Center(QWidget):
         have = installed_apps()
         for cat, name, desc, app_id in APPS:
             btn = QPushButton()
-            rm = QPushButton("Удалить", objectName="remove")
-            rm.setToolTip("Удалить программу")
+            rm = QPushButton(tr("Remove", ru="Удалить"), objectName="remove")
+            rm.setToolTip(tr("Uninstall the app", ru="Удалить программу"))
             self.buttons[app_id], self.removers[app_id] = btn, rm
             btn.clicked.connect(lambda _, a=app_id, n=name: self.app_clicked(a, n))
             rm.clicked.connect(lambda _, a=app_id, n=name: self.remove_app(a, n))
@@ -298,7 +322,8 @@ class Center(QWidget):
         self.grid = QGridLayout(self.grid_host)
         self.grid.setSpacing(14)
         self.grid.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self.empty = QLabel("Ничего не нашлось. Попробуй поискать в магазине Discover.", objectName="desc")
+        self.empty = QLabel(tr("Nothing found. Try searching in the Discover store.",
+                               ru="Ничего не нашлось. Попробуй поискать в магазине Discover."), objectName="desc")
         lay.addWidget(scroll(self.grid_host))
         self.refilter()
         return page
@@ -313,7 +338,7 @@ class Center(QWidget):
             self.grid.takeAt(0).widget().setParent(None)
         shown = 0
         for cat, haystack, frame in self.cards:
-            if (self.category in ("Все", cat)) and (not text or text in haystack):
+            if (self.category in ("all", cat)) and (not text or text in haystack):
                 self.grid.addWidget(frame, shown // COLUMNS, shown % COLUMNS)
                 frame.show()
                 shown += 1
@@ -355,8 +380,9 @@ class Center(QWidget):
     def set_state(self, app_id, state):
         btn = self.buttons[app_id]
         btn.setObjectName("open" if state == "open" else "")
-        btn.setText({"install": "Установить", "queued": "В очереди…", "busy": "Установка…",
-                     "removing": "Удаление…", "open": "Открыть"}[state])
+        btn.setText({"install": tr("Install", ru="Установить"), "queued": tr("Queued…", ru="В очереди…"),
+                     "busy": tr("Installing…", ru="Установка…"), "removing": tr("Removing…", ru="Удаление…"),
+                     "open": tr("Open", ru="Открыть")}[state])
         btn.setEnabled(state in ("install", "open"))
         btn.setProperty("state", state)
         btn.style().unpolish(btn)
@@ -372,7 +398,8 @@ class Center(QWidget):
         self.next_job()
 
     def remove_app(self, app_id, name):
-        if QMessageBox.question(self, "Центр GeOS", f"Удалить {name}?") != QMessageBox.StandardButton.Yes:
+        if QMessageBox.question(self, tr("GeOS Center", ru="Центр GeOS"),
+                                tr("Remove {name}?", ru="Удалить {name}?").format(name=name)) != QMessageBox.StandardButton.Yes:
             return
         self.queue.append(("remove", app_id, name))
         self.set_state(app_id, "queued")
@@ -384,13 +411,14 @@ class Center(QWidget):
         action, app_id, name = self.queue.pop(0)
         if action == "install":
             self.set_state(app_id, "busy")
-            self.status.setText(f"Устанавливаю {name}… Это может занять несколько минут.")
+            self.status.setText(tr("Installing {name}… This may take a few minutes.",
+                                   ru="Устанавливаю {name}… Это может занять несколько минут.").format(name=name))
             script = (f"flatpak remote-add --user --if-not-exists flathub {FLATHUB} && "
                       f"flatpak install --user -y --noninteractive flathub {app_id} && "
                       "(flatpak install --user -y --noninteractive flathub org.gtk.Gtk3theme.Breeze || true)")
         else:
             self.set_state(app_id, "removing")
-            self.status.setText(f"Удаляю {name}…")
+            self.status.setText(tr("Removing {name}…", ru="Удаляю {name}…").format(name=name))
             script = (f"flatpak uninstall --user -y --noninteractive {app_id} || "
                       f"pkexec flatpak uninstall --system -y --noninteractive {app_id}")
         self.proc = QProcess(self)
@@ -403,24 +431,34 @@ class Center(QWidget):
         ok = code == 0
         if action == "install":
             self.set_state(app_id, "open" if ok else "install")
-            self.status.setText(f"{name} установлен ✔ Он также появился в меню «Пуск»." if ok
-                                else f"Не удалось установить {name}")
+            self.status.setText((tr("{name} installed ✔ It is also in the Start menu now.",
+                                    ru="{name} установлен ✔ Он также появился в меню «Пуск».") if ok
+                                 else tr("Could not install {name}", ru="Не удалось установить {name}")).format(name=name))
         else:
             self.set_state(app_id, "install" if ok else "open")
-            self.status.setText(f"{name} удалён" if ok else f"Не удалось удалить {name}")
+            self.status.setText((tr("{name} removed", ru="{name} удалён") if ok
+                                 else tr("Could not remove {name}", ru="Не удалось удалить {name}")).format(name=name))
         if not ok:
             low = err.lower()
             if "недостаточно места" in low or "no space" in low or "not enough space" in low or "insufficient" in low:
                 if is_live():
-                    why = ("Не хватило места. GeOS сейчас запущена с флешки (живой режим): "
-                           "программы ставятся прямо в оперативную память, и её мало.\n\n"
-                           "Установи GeOS на диск — там места хватит. Или выбери программу поменьше.")
+                    why = tr("Not enough space. GeOS is running from a USB stick or ISO (live mode): "
+                             "apps are installed straight into RAM, and there is little of it.\n\n"
+                             "Install GeOS on a disk — there will be plenty of space. Or pick a smaller app.",
+                             ru="Не хватило места. GeOS сейчас запущена с флешки (живой режим): "
+                             "программы ставятся прямо в оперативную память, и её мало.\n\n"
+                             "Установи GeOS на диск — там места хватит. Или выбери программу поменьше.")
                 else:
-                    why = "Не хватило места на диске. Освободи место («Очистка диска» во вкладке «Система») и попробуй ещё раз."
-                QMessageBox.warning(self, "Мало места", f"Не получилось установить {name}.\n\n{why}")
+                    why = tr("Not enough disk space. Free up some space (Disk Cleanup on the System tab) and try again.",
+                             ru="Не хватило места на диске. Освободи место («Очистка диска» во вкладке «Система») и попробуй ещё раз.")
+                QMessageBox.warning(self, tr("Low disk space", ru="Мало места"),
+                                    tr("Could not install {name}.", ru="Не получилось установить {name}.").format(name=name)
+                                    + "\n\n" + why)
             else:
-                QMessageBox.warning(self, "Ошибка", f"Не получилось: {name}.\n"
-                                    "Проверь интернет и попробуй ещё раз.\n\n" + err[-400:])
+                QMessageBox.warning(self, tr("Error", ru="Ошибка"),
+                                    tr("Failed: {name}.\nCheck your internet connection and try again.",
+                                       ru="Не получилось: {name}.\nПроверь интернет и попробуй ещё раз.").format(name=name)
+                                    + "\n\n" + err[-400:])
         self.next_job()
 
     # ---------- вкладка «Система» ----------
@@ -432,14 +470,16 @@ class Center(QWidget):
         items = list(SYSTEM)
         if os.path.exists("/usr/share/wayland-sessions/geos-flow.desktop"):
             if "Hyprland" in os.environ.get("XDG_CURRENT_DESKTOP", ""):
-                items.insert(0, ("logo", "Классический режим", "Вернуться к привычному рабочему столу GeOS",
+                items.insert(0, ("logo", tr("Classic mode", ru="Классический режим"),
+                                 tr("Back to the familiar GeOS desktop", ru="Вернуться к привычному рабочему столу GeOS"),
                                  ["geos-session", "classic"]))
             else:
-                items.insert(0, ("flow", "Режим GeOS Flow", "Окна раскладываются сами, плавные анимации",
+                items.insert(0, ("flow", tr("GeOS Flow mode", ru="Режим GeOS Flow"),
+                                 tr("Windows arrange themselves, smooth animations", ru="Окна раскладываются сами, плавные анимации"),
                                  ["geos-session", "flow"]))
         frames = []
         for icon_name, name, desc, cmd in items:
-            btn = QPushButton("Открыть")
+            btn = QPushButton(tr("Open", ru="Открыть"))
             btn.clicked.connect(lambda _, c=cmd: self.run_tool(c))
             frames.append(card(icon_name, name, desc, btn)[0])
         # Полоски под музыку на рабочем столе (в обычном режиме по умолчанию выкл, в GeOS Flow — вкл)
@@ -447,7 +487,8 @@ class Center(QWidget):
             self.viz_btn = QPushButton()
             self.viz_btn.clicked.connect(self.toggle_visualizer)
             self.update_viz_button()
-            frames.insert(1, card("viz", "Полоски под музыку", "Светящийся визуализатор на рабочем столе",
+            frames.insert(1, card("viz", tr("Music bars", ru="Полоски под музыку"),
+                                  tr("Glowing music visualizer on the desktop", ru="Светящийся визуализатор на рабочем столе"),
                                   self.viz_btn)[0])
         for i, frame in enumerate(frames):
             grid.addWidget(frame, i // COLUMNS, i % COLUMNS)
@@ -455,7 +496,8 @@ class Center(QWidget):
 
     def update_viz_button(self):
         on = subprocess.run(["geos-visualizer", "--status"], capture_output=True, text=True).stdout.strip() == "on"
-        self.viz_btn.setText("Выключить" if on else "Включить")
+        self.viz_on = on
+        self.viz_btn.setText(tr("Turn off", ru="Выключить") if on else tr("Turn on", ru="Включить"))
         self.viz_btn.setObjectName("open" if on else "")
         self.viz_btn.style().unpolish(self.viz_btn)
         self.viz_btn.style().polish(self.viz_btn)
@@ -463,12 +505,14 @@ class Center(QWidget):
     def toggle_visualizer(self):
         subprocess.run(["geos-visualizer", "--toggle"])
         self.update_viz_button()
-        if self.viz_btn.text() == "Выключить":
-            self.status.setText("Полоски включены — включи музыку и посмотри на рабочий стол ✔")
+        if self.viz_on:
+            self.status.setText(tr("Bars are on — play some music and look at the desktop ✔",
+                                   ru="Полоски включены — включи музыку и посмотри на рабочий стол ✔"))
 
     def run_tool(self, cmd):
         if not shutil.which(cmd[0]):
-            QMessageBox.information(self, "Центр GeOS", f"Программа {cmd[0]} не найдена.")
+            QMessageBox.information(self, tr("GeOS Center", ru="Центр GeOS"),
+                                    tr("Program {p} not found.", ru="Программа {p} не найдена.").format(p=cmd[0]))
             return
         QProcess.startDetached(cmd[0], cmd[1:])
 

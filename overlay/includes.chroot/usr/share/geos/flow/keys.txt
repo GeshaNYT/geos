@@ -1,24 +1,24 @@
-Win                  —  меню приложений
-Win + Enter          —  терминал
-Win + E              —  проводник
-Win + B              —  браузер
-Win + G              —  Центр GeOS
-Win + I              —  параметры
-Win + Q  /  Alt + F4 —  закрыть окно
-Win + F              —  на весь экран
-Win + T              —  сделать окно плавающим
-Win + J              —  повернуть раскладку окон
-Win + стрелки        —  перейти к соседнему окну
-Win + Shift + стрелки — передвинуть окно
-Win + 1…9            —  рабочий стол 1…9
-Win + Shift + 1…9    —  перенести окно на рабочий стол
-Win + Tab            —  следующий рабочий стол
-Win + мышь           —  двигать (левая) / менять размер (правая)
-Win + V              —  история буфера обмена
-Win + Shift + S      —  снимок области экрана
-Win + Space          —  сменить раскладку
-Win + O              —  стеклянные окна вкл/выкл
-Win + L              —  заблокировать
-Win + X              —  выключение и выход
-Ctrl + Shift + Esc   —  диспетчер задач
-Три пальца по тачпаду — переключить рабочий стол
+Win                  —  app menu
+Win + Enter          —  terminal
+Win + E              —  file manager
+Win + B              —  browser
+Win + G              —  GeOS Center
+Win + I              —  settings
+Win + Q  /  Alt + F4 —  close window
+Win + F              —  fullscreen
+Win + T              —  make window floating
+Win + J              —  rotate window layout
+Win + arrows         —  move focus to neighbor window
+Win + Shift + arrows —  move window
+Win + 1…9            —  desktop 1…9
+Win + Shift + 1…9    —  move window to desktop
+Win + Tab            —  next desktop
+Win + mouse          —  move (left) / resize (right)
+Win + V              —  clipboard history
+Win + Shift + S      —  screenshot of an area
+Win + Space          —  switch keyboard layout
+Win + O              —  glass windows on/off
+Win + L              —  lock
+Win + X              —  power and log out
+Ctrl + Shift + Esc   —  task manager
+Three fingers on touchpad — switch desktop

@@ -1,0 +1,129 @@
+// Панель GeOS Flow и виджет «большие часы» на рабочем столе (лежит под окнами).
+// Полоски под музыку рисует geos-visualizer — так же, как в обычном режиме.
+[
+    {
+        "layer": "top",
+        "position": "top",
+        "height": 40,
+        "margin-top": 8,
+        "margin-left": 12,
+        "margin-right": 12,
+        "spacing": 6,
+        "modules-left": [
+            "custom/geos",
+            "hyprland/workspaces",
+            "hyprland/window"
+        ],
+        "modules-center": [
+            "custom/cava-mini",
+            "clock"
+        ],
+        "modules-right": [
+            "tray",
+            "hyprland/language",
+            "pulseaudio",
+            "network",
+            "battery",
+            "custom/power"
+        ],
+        "custom/geos": {
+            "format": " ",
+            "tooltip-format": "Меню (Win)",
+            "on-click": "fuzzel --config /usr/share/geos/flow/fuzzel.ini",
+            "on-click-right": "geos-center"
+        },
+        "hyprland/workspaces": {
+            "format": "{icon}",
+            "format-icons": {
+                "default": "○",
+                "active": "●"
+            },
+            "on-scroll-up": "hyprctl dispatch workspace e-1",
+            "on-scroll-down": "hyprctl dispatch workspace e+1",
+            "persistent-workspaces": {
+                "*": 4
+            }
+        },
+        "hyprland/window": {
+            "max-length": 40,
+            "separate-outputs": true
+        },
+        "clock": {
+            "format": "{:%H:%M}",
+            "format-alt": "{:%A, %d %B}",
+            "tooltip-format": "<tt>{calendar}</tt>"
+        },
+        "tray": {
+            "icon-size": 18,
+            "spacing": 8
+        },
+        "hyprland/language": {
+            "format": "{short}",
+            "on-click": "hyprctl switchxkblayout all next"
+        },
+        "pulseaudio": {
+            "format": "{icon} {volume}%",
+            "format-muted": "🔇",
+            "format-icons": {
+                "default": [
+                    "🔈",
+                    "🔉",
+                    "🔊"
+                ]
+            },
+            "on-click": "pavucontrol-qt",
+            "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
+        },
+        "network": {
+            "format-wifi": "📶 {essid}",
+            "format-ethernet": "🌐 Сеть",
+            "format-disconnected": "⚠ Нет сети",
+            "tooltip-format": "{ifname}: {ipaddr}",
+            "on-click": "kcmshell6 kcm_networkmanagement"
+        },
+        "battery": {
+            "format": "{icon} {capacity}%",
+            "format-charging": "⚡ {capacity}%",
+            "format-icons": [
+                "🪫",
+                "🔋",
+                "🔋",
+                "🔋"
+            ],
+            "states": {
+                "warning": 25,
+                "critical": 10
+            }
+        },
+        "custom/power": {
+            "format": "⏻",
+            "tooltip-format": "Выключение и выход",
+            "on-click": "/usr/local/bin/geos-flow-power"
+        },
+        "name": "geos-panel",
+        "custom/cava-mini": {
+            "exec": "/usr/local/bin/geos-cava-bars 12",
+            "format": "{}",
+            "tooltip": false,
+            "restart-interval": 5
+        }
+    },
+    {
+        "name": "geos-clock",
+        "layer": "bottom",
+        "position": "top",
+        "exclusive": false,
+        "passthrough": true,
+        "margin-top": 150,
+        "height": 0,
+        "modules-center": [
+            "clock#big"
+        ],
+        "clock#big": {
+            "format": "<span size='64pt' weight='800'>{:%H:%M}</span>\n<span size='15pt' foreground='#96aac8'>{:%A, %d %B}</span>",
+            "interval": 10,
+            "tooltip": false,
+            "justify": "center"
+        }
+    }
+]

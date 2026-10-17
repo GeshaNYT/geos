@@ -1,19 +1,20 @@
 #!/bin/sh
 # Переключение режима рабочего стола: classic (KDE Plasma) или flow (Hyprland)
+. /usr/local/lib/geos/i18n.sh
 case "$1" in
   flow)    SESSION=geos-flow.desktop; NAME="GeOS Flow" ;;
-  classic) SESSION=plasma.desktop;    NAME="GeOS (классический)" ;;
-  *) echo "Использование: geos-session classic|flow"; exit 2 ;;
+  classic) SESSION=plasma.desktop;    NAME="$(T "GeOS (classic)" "GeOS (классический)")" ;;
+  *) echo "Usage: geos-session classic|flow"; exit 2 ;;
 esac
 if [ "$1" = "flow" ] && [ ! -f /usr/share/wayland-sessions/geos-flow.desktop ]; then
-  kdialog --title "GeOS" --error "Режим GeOS Flow не установлен в этой сборке."
+  kdialog --title "GeOS" --error "$(T "GeOS Flow is not included in this build." "Режим GeOS Flow не установлен в этой сборке.")"
   exit 1
 fi
 if [ "$1" = "flow" ] && [ "$(systemd-detect-virt 2>/dev/null)" = "oracle" ]; then
-  kdialog --title "GeOS" --sorry "GeOS Flow не работает в VirtualBox: Hyprland нужна настоящая видеокарта с ускорением.\n\nПопробуй GeOS Flow с флешки на обычном компьютере."
+  kdialog --title "GeOS" --sorry "$(T "GeOS Flow does not work in VirtualBox: Hyprland needs a real graphics card with acceleration.\n\nTry GeOS Flow from a USB stick on a regular computer." "GeOS Flow не работает в VirtualBox: Hyprland нужна настоящая видеокарта с ускорением.\n\nПопробуй GeOS Flow с флешки на обычном компьютере.")"
   exit 0
 fi
-kdialog --title "GeOS" --yesno "Перейти в режим «$NAME»?\n\nОткрытые программы закроются — сохрани свою работу." || exit 0
+kdialog --title "GeOS" --yesno "$(T "Switch to “$NAME” mode?\n\nOpen apps will close — save your work." "Перейти в режим «$NAME»?\n\nОткрытые программы закроются — сохрани свою работу.")" || exit 0
 
 export SUDO_ASKPASS=/usr/local/bin/geos-askpass
 sudo -A sh -c "

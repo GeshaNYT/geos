@@ -1,0 +1,7 @@
+#!/bin/sh
+# Панель GeOS Flow (Waybar) на языке системы
+. /usr/local/lib/geos/i18n.sh
+F=/usr/share/geos/flow/waybar
+C=$F/config.jsonc
+[ -f "$F/config.$GEOS_LANG.jsonc" ] && C="$F/config.$GEOS_LANG.jsonc"
+exec waybar -c "$C" -s "$F/style.css"

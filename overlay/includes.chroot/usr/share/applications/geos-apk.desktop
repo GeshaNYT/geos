@@ -1,6 +1,7 @@
 [Desktop Entry]
 Type=Application
-Name=Установщик Android-приложений
+Name=Android App Installer
+Name[ru]=Установщик Android-приложений
 Exec=/usr/local/bin/geos-apk %f
 Icon=android
 MimeType=application/vnd.android.package-archive;
