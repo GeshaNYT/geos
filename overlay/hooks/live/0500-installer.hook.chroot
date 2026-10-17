@@ -14,7 +14,7 @@ if [ -f "$SRC/branding.desc" ]; then
     -e 's/^componentName:.*/componentName:  geos/' \
     -e 's/^(\s*)(productName|shortProductName):.*/\1\2: "GeOS"/' \
     -e 's/^(\s*)(version|shortVersion):.*/\1\2: "1.0"/' \
-    -e 's/^(\s*)(versionedName|shortVersionedName):.*/\1\2: "GeOS 1.0"/' \
+    -e 's/^(\s*)(versionedName|shortVersionedName):.*/\1\2: "GeOS"/' \
     -e 's/^(\s*)bootloaderEntryName:.*/\1bootloaderEntryName: "GeOS"/' \
     -e 's#^(\s*)(productUrl|releaseNotesUrl):.*#\1\2: "https://github.com/GeshaNYT/geos"#' \
     -e 's#^(\s*)(supportUrl|knownIssuesUrl):.*#\1\2: "https://github.com/GeshaNYT/geos/issues"#' \
@@ -28,6 +28,10 @@ if [ -f "$SRC/branding.desc" ]; then
     -e 's/^(\s*)sidebarSelect:.*/\1sidebarSelect: "#2563eb"/' \
     -e 's/^(\s*)sidebarTextSelect:.*/\1sidebarTextSelect: "#ffffff"/' \
     "$D"
+  # Цвета боковой панели. Названия ключей бывают с большой и маленькой буквы (зависит от версии),
+  # и отступы у Debian свои — поэтому убираем весь старый блок «style:» и пишем свой в конец файла
+  awk 'BEGIN{skip=0} /^style:/{skip=1; next} skip && /^[^ \t#]/{skip=0} !skip{print}' "$D" > "$D.new" && mv "$D.new" "$D"
+  printf '\nstyle:\n    SidebarBackground: "#0a1428"\n    SidebarText: "#c9d6ee"\n    SidebarBackgroundCurrent: "#2563eb"\n    SidebarTextCurrent: "#ffffff"\n    sidebarBackground: "#0a1428"\n    sidebarText: "#c9d6ee"\n    sidebarTextSelect: "#2563eb"\n    sidebarTextHighlight: "#ffffff"\n' >> "$D"
   # Короче приветствие: «Добро пожаловать в программу установки GeOS» без слова Calamares,
   # картинка своего размера, а не на пол-окна
   for kv in "welcomeStyleCalamares: false" "welcomeExpandingLogo: false"; do
