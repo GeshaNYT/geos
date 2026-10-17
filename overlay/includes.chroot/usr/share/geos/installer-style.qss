@@ -121,3 +121,17 @@ QScrollBar:horizontal { background: transparent; height: 10px; margin: 2px; }
 QScrollBar::handle:horizontal { background: #2a4370; border-radius: 4px; min-width: 30px; }
 QSplitter::handle { background: #22385e; }
 QToolTip { background: #0a1428; color: #e6eefa; border: 1px solid #284068; border-radius: 6px; padding: 6px; }
+
+/* Кнопки внизу (Назад / Далее / Установить / Готово / Отмена) — одного размера и на одной линии,
+   главная отличается только цветом */
+QPushButton#view-button-back, QPushButton#view-button-next, QPushButton#view-button-install,
+QPushButton#view-button-done, QPushButton#view-button-cancel, QPushButton:default {
+    min-width: 92px;
+    min-height: 26px;
+    max-height: 26px;
+    padding: 4px 16px;
+    margin: 0px;
+    font-weight: 600;
+    border-width: 1px;
+    border-style: solid;
+}
