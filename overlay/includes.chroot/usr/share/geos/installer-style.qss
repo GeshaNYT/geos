@@ -135,3 +135,6 @@ QPushButton#view-button-done, QPushButton#view-button-cancel, QPushButton:defaul
     border-width: 1px;
     border-style: solid;
 }
+
+/* Область слайдов во время установки — тёмная, без белой рамки */
+QQuickWidget { background: #0f1d36; border: none; }
