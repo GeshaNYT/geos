@@ -88,7 +88,10 @@ touch "$FLAG"
 # Пункт «Install GeOS» в меню загрузки — режим установки, как в Windows:
 # установщик на весь экран (без рамки, панели и рабочего стола за ним),
 # а если его закрыть — спрашиваем, что делать дальше
-if $LIVE && grep -qw "geos-install" /proc/cmdline && [ -f /usr/share/applications/install-geos.desktop ]; then
+# (обычно это делает отдельный сеанс установки geos-installer-session; здесь — запасной путь,
+#  если сеанс не переключился. После «Попробовать GeOS» установщик сам не открываем.)
+if $LIVE && grep -qw "geos-install" /proc/cmdline && [ ! -f "$HOME/.cache/geos-try-live" ] && \
+   [ -f /usr/share/applications/install-geos.desktop ]; then
   RID=geos-installer
   RULES=$(kreadconfig6 --file kwinrulesrc --group General --key rules)
   IDS=$(printf '%s' "$RULES" | tr ',' '\n' | grep -v -x -e "$RID" -e '' | tr '\n' ',')

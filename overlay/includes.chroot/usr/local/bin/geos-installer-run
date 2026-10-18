@@ -1,0 +1,32 @@
+#!/bin/sh
+# Внутри сеанса установки: запускаем установщик, а если его закрыли — спрашиваем, что дальше
+. /usr/local/lib/geos/i18n.sh
+# Агент паролей — без него установщик не получит права администратора
+AGENT=/usr/lib/x86_64-linux-gnu/libexec/polkit-kde-authentication-agent-1
+[ -x "$AGENT" ] && "$AGENT" &
+
+EXEC=$(sed -n 's/^Exec=//p' /usr/share/applications/install-geos.desktop 2>/dev/null | head -1 | sed 's/ %[a-zA-Z]//g')
+[ -n "$EXEC" ] || EXEC="pkexec calamares"
+sh -c "$EXEC"
+
+while :; do
+  NEXT=$(kdialog --title "GeOS" --menu "$(T "The installer was closed. What next?" "Установщик закрыт. Что сделать?")" \
+          install "$(T "Open the installer again" "Открыть установщик снова")" \
+          try "$(T "Try GeOS (live mode)" "Попробовать GeOS (пробный режим)")" \
+          reboot "$(T "Restart" "Перезагрузить")" poweroff "$(T "Shut down" "Выключить компьютер")")
+  case "$NEXT" in
+    install)  sh -c "$EXEC" ;;
+    reboot)   systemctl reboot; exit 0 ;;
+    poweroff) systemctl poweroff; exit 0 ;;
+    *)        break ;;
+  esac
+done
+
+# «Попробовать GeOS»: переключаем автовход на обычный рабочий стол и перезапускаем экран входа
+mkdir -p "$HOME/.cache" && touch "$HOME/.cache/geos-try-live"
+sudo -n sh -c '
+  for f in /etc/sddm.conf /etc/sddm.conf.d/*.conf; do
+    [ -f "$f" ] && sed -i "/^\[Autologin\]/,/^\[/{s#^Session=geos-installer.desktop#Session=plasma.desktop#}" "$f"
+  done
+  systemctl restart sddm
+'

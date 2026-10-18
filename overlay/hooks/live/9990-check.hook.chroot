@@ -63,6 +63,7 @@ chk "grep -q '^Name=Install GeOS' /usr/share/applications/install-geos.desktop &
 chk "[ \$(ls /usr/lib/firefox-esr/browser/extensions/ 2>/dev/null | grep -c langpack) -ge 50 ]" "Firefox на всех языках"
 chk "[ \$(grep -c '^# *[a-z].*UTF-8' /etc/locale.gen) -ge 100 ]" "Список языков для установщика (locale.gen)"
 chk "[ -x /usr/local/bin/geos-center ] && python3 -c 'import geos_i18n'" "Переводы программ GeOS"
+chk "systemctl is-enabled geos-install-mode.service && [ -f /usr/share/wayland-sessions/geos-installer.desktop ] && command -v kwin_wayland" "Install GeOS: установщик сразу, без рабочего стола"
 chk "[ -f /etc/calamares/branding/geos/stylesheet.qss ]"   "Современный вид установщика"
 chk "grep -q geos-install-reboot /etc/calamares/modules/finished.conf" "После установки диск вынимается сам"
 chk "cmp -s /etc/skel/.face /usr/share/geos/avatar.png"          "Аватарка GeOS для пользователей"

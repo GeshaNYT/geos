@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=GeOS Installer
+Comment=Install GeOS
+Exec=/usr/local/bin/geos-installer-session
+Type=Application
+DesktopNames=KDE
+NoDisplay=true
+Hidden=true

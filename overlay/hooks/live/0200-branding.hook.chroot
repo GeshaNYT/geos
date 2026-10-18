@@ -3,6 +3,8 @@
 set -e
 chmod +x /usr/local/sbin/geos-branding
 systemctl enable geos-branding.service
+chmod +x /usr/local/sbin/geos-install-mode
+systemctl enable geos-install-mode.service
 echo 'GeOS \n \l' > /etc/issue
 mkdir -p /etc/skel/.config
 cat > /etc/skel/.config/kdeglobals << 'CFG'

@@ -1,0 +1,12 @@
+#!/bin/sh
+# «Install GeOS» в меню загрузки: автовход сразу в сеанс установщика (без рабочего стола).
+# live-config уже записал автовход пробного пользователя — меняем только сеанс.
+for f in /etc/sddm.conf /etc/sddm.conf.d/*.conf; do
+  [ -f "$f" ] && grep -q '^\[Autologin\]' "$f" || continue
+  if sed -n '/^\[Autologin\]/,/^\[/p' "$f" | grep -q '^Session='; then
+    sed -i '/^\[Autologin\]/,/^\[/{s#^Session=.*#Session=geos-installer.desktop#}' "$f"
+  else
+    sed -i '/^\[Autologin\]/a Session=geos-installer.desktop' "$f"
+  fi
+done
+true

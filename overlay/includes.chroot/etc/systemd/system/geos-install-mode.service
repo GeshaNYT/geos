@@ -1,0 +1,12 @@
+[Unit]
+Description=GeOS install mode (Install GeOS boot entry)
+After=live-config.service local-fs.target
+Before=display-manager.service
+ConditionKernelCommandLine=geos-install
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/geos-install-mode
+
+[Install]
+WantedBy=multi-user.target

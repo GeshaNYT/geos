@@ -1,0 +1,17 @@
+#!/bin/sh
+# Сеанс установки GeOS: только оконная система KWin и установщик на весь экран — как в Windows
+mkdir -p "$HOME/.config"
+cat > "$HOME/.config/kwinrulesrc" << 'RULES'
+[General]
+count=1
+rules=geos-installer
+
+[geos-installer]
+Description=GeOS installer fullscreen
+wmclass=calamares
+wmclassmatch=2
+fullscreen=true
+fullscreenrule=2
+RULES
+export XDG_CURRENT_DESKTOP=KDE
+exec kwin_wayland --xwayland --no-lockscreen --exit-with-session=/usr/local/bin/geos-installer-run
