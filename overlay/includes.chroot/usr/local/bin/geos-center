@@ -198,7 +198,7 @@ def scroll(widget):
 class Center(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(tr("GeOS Center", ru="Центр GeOS"))
+        self.setWindowTitle(tr("GeOS Centre", ru="Центр GeOS"))
         self.setWindowIcon(QIcon(LOGO))
         self.resize(1000, 720)
         self.queue = []
@@ -211,7 +211,7 @@ class Center(QWidget):
         root = QVBoxLayout(self)
         root.setContentsMargins(24, 20, 24, 20)
 
-        head, self.status = ui.header("logo", tr("GeOS Center", ru="Центр GeOS"),
+        head, self.status = ui.header("logo", tr("GeOS Centre", ru="Центр GeOS"),
                                        tr("Apps in one click — no terminal needed", ru="Программы в один клик — без терминала"))
         root.addLayout(head)
 
@@ -398,7 +398,7 @@ class Center(QWidget):
         self.next_job()
 
     def remove_app(self, app_id, name):
-        if QMessageBox.question(self, tr("GeOS Center", ru="Центр GeOS"),
+        if QMessageBox.question(self, tr("GeOS Centre", ru="Центр GeOS"),
                                 tr("Remove {name}?", ru="Удалить {name}?").format(name=name)) != QMessageBox.StandardButton.Yes:
             return
         self.queue.append(("remove", app_id, name))
@@ -511,7 +511,7 @@ class Center(QWidget):
 
     def run_tool(self, cmd):
         if not shutil.which(cmd[0]):
-            QMessageBox.information(self, tr("GeOS Center", ru="Центр GeOS"),
+            QMessageBox.information(self, tr("GeOS Centre", ru="Центр GeOS"),
                                     tr("Program {p} not found.", ru="Программа {p} не найдена.").format(p=cmd[0]))
             return
         QProcess.startDetached(cmd[0], cmd[1:])

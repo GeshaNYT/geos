@@ -2,7 +2,7 @@ Win                  —  app menu
 Win + Enter          —  terminal
 Win + E              —  file manager
 Win + B              —  browser
-Win + G              —  GeOS Center
+Win + G              —  GeOS Centre
 Win + I              —  settings
 Win + Q  /  Alt + F4 —  close window
 Win + F              —  fullscreen

@@ -31,7 +31,7 @@ Presentation {
     Slide {
         Rectangle { anchors.fill: parent; color: "#0d1b34" }
         Text { anchors.centerIn: parent; width: parent.width * 0.8; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; color: "#e6eefa"; font.pixelSize: 22
-               text: presentation.t("GeOS Center: Steam, Discord, Telegram, Minecraft and more — in one click.",
+               text: presentation.t("GeOS Centre: Steam, Discord, Telegram, Minecraft and more — in one click.",
                                     "Центр GeOS: Steam, Discord, Telegram, Minecraft и другие программы — в один клик.") }
     }
     Slide {

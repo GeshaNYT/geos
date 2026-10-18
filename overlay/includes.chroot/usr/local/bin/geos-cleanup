@@ -16,10 +16,10 @@ step "$(T "Old system logs" "Старые системные журналы")"; 
 step "$(T "Thumbnails and temporary files" "Миниатюры и временные файлы")";    rm -rf "$HOME/.cache/thumbnails"; ok
 
 if [ -n "$(ls -A "$HOME/.local/share/Trash/files" 2>/dev/null)" ]; then
-  echo "::ask $(T "There are files in the Trash. Empty the Trash?" "В корзине есть файлы. Очистить корзину?")"
+  echo "::ask $(T "There are files in the Bin. Empty the Bin?" "В корзине есть файлы. Очистить корзину?")"
   read -r a
   if [ "$a" = "y" ]; then
-    step "$(T "Emptying the Trash" "Очищаю корзину")"
+    step "$(T "Emptying the Bin" "Очищаю корзину")"
     rm -rf "$HOME/.local/share/Trash/files/"* "$HOME/.local/share/Trash/info/"*
     ok
   fi
