@@ -138,3 +138,7 @@ QPushButton#view-button-done, QPushButton#view-button-cancel, QPushButton:defaul
 
 /* Область слайдов во время установки — тёмная, без белой рамки */
 QQuickWidget { background: #0f1d36; border: none; }
+
+/* Видимая «птичка» в отмеченной галочке и точка в выбранном переключателе */
+QCheckBox::indicator:checked { image: url(/usr/share/geos/installer/check.svg); }
+QRadioButton::indicator:checked { image: url(/usr/share/geos/installer/dot.svg); }
