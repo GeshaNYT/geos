@@ -24,6 +24,8 @@ done
 
 # «Попробовать GeOS»: переключаем автовход на обычный рабочий стол и перезапускаем экран входа
 mkdir -p "$HOME/.cache" && touch "$HOME/.cache/geos-try-live"
+# правило «установщик на весь экран» нужно только в сеансе установки
+rm -f "$HOME/.config/kwinrulesrc"
 sudo -n sh -c '
   for f in /etc/sddm.conf /etc/sddm.conf.d/*.conf; do
     [ -f "$f" ] && sed -i "/^\[Autologin\]/,/^\[/{s#^Session=geos-installer.desktop#Session=plasma.desktop#}" "$f"

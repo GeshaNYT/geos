@@ -429,7 +429,12 @@ class TaskManager(QWidget):
                 pass
         critical = {"plasmashell", "kwin_wayland", "kwin_x11", "systemd", "sddm", "Xwayland", "dbus-daemon",
                     "pipewire", "wireplumber", "Hyprland"}
-        names = {self.procs[p].name() for p in pids if p in self.procs and self.procs[p].is_running()}
+        names = set()
+        for p in pids:
+            try:
+                names.add(psutil.Process(p).name())
+            except psutil.Error:
+                pass
         warn = ""
         if names & critical:
             warn = "\n\n" + tr("This is part of the system. Ending it may close the desktop or turn off sound.",
