@@ -1,0 +1,24 @@
+#!/bin/sh
+# Загрузчик GeOS без интернета.
+# Установщик Debian ставит загрузчик (grub-pc для BIOS / grub-efi для UEFI) командой apt-get прямо во время
+# установки — без интернета это молча не получается, и установленная система не загружается.
+# Поэтому: общие части загрузчика ставим в систему заранее, а сами пакеты кладём на ISO.
+export DEBIAN_FRONTEND=noninteractive
+timeout 20m apt-get install -y grub-pc-bin grub-efi-amd64-bin grub2-common grub-common efibootmgr os-prober \
+  || echo "ВНИМАНИЕ: не установились части загрузчика"
+
+D=/usr/share/geos/grub-debs
+rm -rf "$D"; mkdir -p "$D"; cd "$D" || exit 0
+for p in grub-pc grub-efi-amd64 grub-efi-amd64-signed shim-signed shim-signed-common shim-helpers-amd64-signed \
+         shim-unsigned mokutil; do
+  timeout 5m apt-get download "$p" >/dev/null 2>&1 || echo "ВНИМАНИЕ: не скачался пакет загрузчика $p"
+done
+chown -R root:root "$D"; chmod 644 "$D"/*.deb 2>/dev/null
+
+# Подменяем шаг установщика «bootloader-config» своим — он ставит загрузчик из этих файлов
+if [ -f /usr/sbin/bootloader-config ]; then
+  dpkg-divert --local --rename --divert /usr/sbin/bootloader-config.debian --add /usr/sbin/bootloader-config
+fi
+ln -sf /usr/local/sbin/geos-bootloader-config /usr/sbin/bootloader-config
+chmod +x /usr/local/sbin/geos-bootloader-config
+true

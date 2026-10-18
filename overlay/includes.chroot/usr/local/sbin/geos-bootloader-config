@@ -1,0 +1,55 @@
+#!/bin/bash
+# Шаг установщика GeOS: ставит загрузчик в новую систему. Работает без интернета —
+# пакеты загрузчика лежат на ISO в /usr/share/geos/grub-debs.
+CHROOT=$(mount | grep proc | grep calamares | awk '{print $3}' | sed -e "s#/proc##g")
+[ -n "$CHROOT" ] && [ -d "$CHROOT" ] || { echo "bootloader-config: target not found"; exit 1; }
+DEBS=/usr/share/geos/grub-debs
+export DEBIAN_FRONTEND=noninteractive
+
+# Шифрование диска (если выбрано): нужные утилиты и закрытые права на initramfs
+if [ "$(mount | grep "$CHROOT"" " | cut -c -16)" = "/dev/mapper/luks" ]; then
+  echo "UMASK=0077" > "$CHROOT/etc/initramfs-tools/conf.d/initramfs-permissions"
+  chroot "$CHROOT" apt-get -y install cryptsetup-initramfs cryptsetup keyutils
+fi
+
+if [ -d /sys/firmware/efi/efivars ]; then
+  echo " * GeOS: installing grub-efi (UEFI)"
+  PKGS="grub-efi-amd64 grub-efi-amd64-signed shim-signed shim-signed-common shim-helpers-amd64-signed shim-unsigned mokutil"
+  MAIN=grub-efi-amd64
+else
+  echo " * GeOS: installing grub-pc (BIOS)"
+  PKGS="grub-pc"
+  MAIN=grub-pc
+fi
+
+TMP="$CHROOT/tmp/geos-grub"
+rm -rf "$TMP"; mkdir -p "$TMP"
+FILES=""
+for p in $PKGS; do
+  for f in "$DEBS/${p}_"*.deb; do
+    [ -f "$f" ] && cp "$f" "$TMP/" && FILES="$FILES /tmp/geos-grub/$(basename "$f")"
+  done
+done
+OK=false
+if [ -n "$FILES" ]; then
+  # shellcheck disable=SC2086
+  chroot "$CHROOT" dpkg -i --force-confdef --force-confold $FILES && OK=true
+  # если подписанные пакеты (Secure Boot) не встали — ставим хотя бы основной
+  if ! $OK; then
+    for f in $FILES; do case "$f" in */${MAIN}_*) chroot "$CHROOT" dpkg -i --force-confdef --force-confold "$f" && OK=true ;; esac; done
+  fi
+fi
+# Запасной путь — как у Debian, через интернет
+$OK || chroot "$CHROOT" apt-get -y install $MAIN || true
+rm -rf "$TMP"
+chroot "$CHROOT" dpkg --configure -a >/dev/null 2>&1 || true
+
+# Видеть другие системы (например, Windows) в меню загрузки
+if [ -f "$CHROOT/etc/default/grub" ]; then
+  sed -i "s/^#GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=false/" "$CHROOT/etc/default/grub"
+  grep -q '^GRUB_DISABLE_OS_PROBER=' "$CHROOT/etc/default/grub" || echo "GRUB_DISABLE_OS_PROBER=false" >> "$CHROOT/etc/default/grub"
+fi
+chroot "$CHROOT" /usr/sbin/update-grub || true
+# Сообщаем установщику об ошибке, если загрузчик так и не поставился — лучше честная ошибка, чем «All done»
+chroot "$CHROOT" dpkg -s "$MAIN" >/dev/null 2>&1 || { echo "GeOS: bootloader package $MAIN could not be installed"; exit 1; }
+exit 0

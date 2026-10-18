@@ -65,6 +65,7 @@ chk "[ \$(grep -c '^# *[a-z].*UTF-8' /etc/locale.gen) -ge 100 ]" "Список �
 chk "[ -x /usr/local/bin/geos-center ] && python3 -c 'import geos_i18n'" "Переводы программ GeOS"
 chk "systemctl is-enabled geos-install-mode.service && [ -f /usr/share/wayland-sessions/geos-installer.desktop ] && command -v kwin_wayland" "Install GeOS: установщик сразу, без рабочего стола"
 chk "python3 -c 'import psutil, PyQt6' && [ -x /usr/local/bin/geos-taskmgr ]" "Диспетчер задач GeOS"
+chk "ls /usr/share/geos/grub-debs/grub-pc_*.deb && ls /usr/share/geos/grub-debs/grub-efi-amd64_*.deb && [ -L /usr/sbin/bootloader-config ] && command -v grub-install" "Загрузчик ставится без интернета (BIOS и UEFI)"
 chk "[ -f /etc/calamares/branding/geos/stylesheet.qss ]"   "Современный вид установщика"
 chk "grep -q geos-install-reboot /etc/calamares/modules/finished.conf" "После установки диск вынимается сам"
 chk "cmp -s /etc/skel/.face /usr/share/geos/avatar.png"          "Аватарка GeOS для пользователей"
