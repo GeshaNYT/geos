@@ -77,7 +77,7 @@ SYSTEM = [
     ("cleanup", tr("Disk Cleanup", ru="Очистка диска"), tr("Remove junk and free up space", ru="Удалить мусор и освободить место"),
      ["geos-task", "cleanup"]),
     ("taskmgr", tr("Task Manager", ru="Диспетчер задач"), tr("Processes and load (Ctrl+Shift+Esc)", ru="Процессы и нагрузка (Ctrl+Shift+Esc)"),
-     ["plasma-systemmonitor"]),
+     ["geos-taskmgr"]),
     ("android", tr("Enable Android", ru="Включить Android"),
      tr("Prepare to run .apk files (downloads ~1.5 GB)", ru="Подготовить запуск .apk (скачает ~1,5 ГБ)"),
      ["geos-task", "android"]),

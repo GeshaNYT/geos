@@ -3,6 +3,7 @@
 libkf6config-bin
 # Центр GeOS
 python3-pyqt6
+python3-psutil
 # Связь с телефоном
 kdeconnect
 # Ускорение слабых ПК: сжатие памяти, защита от зависаний, режимы питания

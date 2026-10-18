@@ -2,8 +2,11 @@
 [services][org.kde.spectacle.desktop]
 RectangularRegionScreenShot=Meta+Shift+S\tMeta+Shift+Print
 
+[services][geos-taskmgr.desktop]
+_launch=Ctrl+Shift+Esc
+
 [services][org.kde.plasma-systemmonitor.desktop]
-_launch=Ctrl+Shift+Esc\tCtrl+Esc
+_launch=Ctrl+Esc
 
 [services][systemsettings.desktop]
 _launch=Meta+I

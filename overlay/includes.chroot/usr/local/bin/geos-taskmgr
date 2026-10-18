@@ -1,0 +1,829 @@
+#!/usr/bin/env python3
+# Диспетчер задач GeOS: процессы, производительность, автозагрузка и сведения о компьютере.
+# Привычный по Windows набор функций, но свой внешний вид в стиле GeOS.
+import collections
+import configparser
+import glob
+import os
+import platform
+import re
+import signal
+import socket
+import subprocess
+import sys
+import time
+
+import psutil
+from PyQt6.QtCore import QPointF, QRectF, Qt, QTimer
+from PyQt6.QtGui import QBrush, QColor, QFont, QIcon, QLinearGradient, QPainter, QPainterPath, QPen
+from PyQt6.QtWidgets import (
+    QAbstractItemView, QApplication, QFrame, QGridLayout, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
+    QMenu, QMessageBox, QPushButton, QScrollArea, QStackedWidget, QTabWidget, QTreeWidget, QTreeWidgetItem,
+    QVBoxLayout, QWidget,
+)
+
+import geos_ui as ui
+from geos_i18n import tr
+
+REFRESH_MS = 2000
+HISTORY = 60                      # точек на графике (2 минуты при обновлении раз в 2 с)
+NCPU = psutil.cpu_count() or 1
+ME = os.getuid()
+APP_DIRS = ["/usr/share/applications", "/usr/local/share/applications",
+            "/var/lib/flatpak/exports/share/applications",
+            os.path.expanduser("~/.local/share/applications"),
+            os.path.expanduser("~/.local/share/flatpak/exports/share/applications")]
+
+
+# ---------- оформление чисел ----------
+def fmt_bytes(n, rate=False):
+    units = [tr("B", ru="Б"), tr("KB", ru="КБ"), tr("MB", ru="МБ"), tr("GB", ru="ГБ"), tr("TB", ru="ТБ")]
+    i = 0
+    n = float(n)
+    while n >= 1024 and i < len(units) - 1:
+        n /= 1024
+        i += 1
+    s = f"{n:.0f}" if i == 0 or n >= 100 else f"{n:.1f}"
+    return s + " " + units[i] + (tr("/s", ru="/с") if rate else "")
+
+
+def fmt_uptime(sec):
+    sec = int(sec)
+    d, sec = divmod(sec, 86400)
+    h, sec = divmod(sec, 3600)
+    m, s = divmod(sec, 60)
+    return f"{d}:{h:02d}:{m:02d}:{s:02d}" if d else f"{h}:{m:02d}:{s:02d}"
+
+
+# ---------- программы из меню «Пуск» (чтобы показывать понятные имена и значки) ----------
+def desktop_index():
+    """id ярлыка и имя исполняемого файла → (название, значок)."""
+    lang = os.environ.get("LANG", "en")[:2]
+    by_id, by_exec = {}, {}
+    for d in APP_DIRS:
+        for path in glob.glob(os.path.join(d, "*.desktop")):
+            cp = configparser.RawConfigParser(strict=False, interpolation=None)
+            cp.optionxform = str
+            try:
+                cp.read(path, encoding="utf-8")
+                e = cp["Desktop Entry"]
+            except (configparser.Error, KeyError, UnicodeDecodeError):
+                continue
+            name = e.get(f"Name[{lang}]") or e.get("Name") or ""
+            icon = e.get("Icon", "")
+            did = os.path.basename(path)[:-8]
+            by_id[did.lower()] = (name, icon)
+            if e.get("NoDisplay", "false").lower() == "true":
+                continue
+            exe = e.get("Exec", "").split()
+            words = [w for w in exe if "=" not in w or w.startswith("/")]
+            if words:
+                if os.path.basename(words[0]) in ("flatpak",) and "run" in words:
+                    continue
+                by_exec.setdefault(os.path.basename(words[0]).lower(), (name, icon))
+    return by_id, by_exec
+
+
+UNIT_RE = re.compile(r"/app-(?:flatpak-)?(.+?)(?:@[^/]*)?(?:-[0-9a-f]+)?\.(?:scope|service)$")
+
+
+def app_of(pid, by_id):
+    """По «ячейке» systemd, в которой KDE запустил программу, узнаём, какой это ярлык из «Пуска»."""
+    try:
+        cg = open(f"/proc/{pid}/cgroup").read().strip().splitlines()[-1]
+    except OSError:
+        return None
+    m = UNIT_RE.search(cg)
+    if not m:
+        return None
+    unit = m.group(1).replace("\\x2d", "-").lower()
+    # «app-<запустивший>-<ярлык>-<номер>»: пробуем от самого длинного хвоста к короткому
+    parts = unit.split("-")
+    for i in range(len(parts)):
+        cand = "-".join(parts[i:])
+        if cand in by_id:
+            return cand
+    return None
+
+
+# ---------- график ----------
+class Graph(QWidget):
+    def __init__(self, color=ui.ACCENT_HI, small=False):
+        super().__init__()
+        self.values = collections.deque([0.0] * HISTORY, maxlen=HISTORY)
+        self.color = QColor(color)
+        self.small = small
+        self.setMinimumHeight(36 if small else 220)
+
+    def push(self, v):
+        self.values.append(max(0.0, min(100.0, v)))
+        self.update()
+
+    def paintEvent(self, _):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        r = QRectF(self.rect()).adjusted(1, 1, -1, -1)
+        p.setPen(QPen(QColor(ui.LINE), 1))
+        p.setBrush(QColor(ui.CARD))
+        p.drawRoundedRect(r, 6 if self.small else 10, 6 if self.small else 10)
+        if not self.small:
+            p.setPen(QPen(QColor(30, 58, 110, 120), 1))
+            for i in range(1, 4):
+                y = r.top() + r.height() * i / 4
+                p.drawLine(QPointF(r.left(), y), QPointF(r.right(), y))
+            for i in range(1, 6):
+                x = r.left() + r.width() * i / 6
+                p.drawLine(QPointF(x, r.top()), QPointF(x, r.bottom()))
+        step = r.width() / (HISTORY - 1)
+        pts = [QPointF(r.left() + i * step, r.bottom() - v / 100 * (r.height() - 2))
+               for i, v in enumerate(self.values)]
+        fill = QPainterPath(QPointF(r.left(), r.bottom()))
+        for pt in pts:
+            fill.lineTo(pt)
+        fill.lineTo(QPointF(r.right(), r.bottom()))
+        fill.closeSubpath()
+        grad = QLinearGradient(0, r.top(), 0, r.bottom())
+        c1, c2 = QColor(self.color), QColor(self.color)
+        c1.setAlpha(110)
+        c2.setAlpha(15)
+        grad.setColorAt(0, c1)
+        grad.setColorAt(1, c2)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QBrush(grad))
+        p.drawPath(fill)
+        line = QPainterPath(pts[0])
+        for pt in pts[1:]:
+            line.lineTo(pt)
+        p.setPen(QPen(self.color, 1.5 if self.small else 2))
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawPath(line)
+        p.end()
+
+
+# ---------- карточка ресурса слева во вкладке «Производительность» ----------
+class ResCard(QFrame):
+    def __init__(self, on_click):
+        super().__init__()
+        self.on_click = on_click
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setMinimumHeight(66)
+        self.set_checked(False)
+
+    def set_checked(self, on):
+        self.setStyleSheet(
+            f"ResCard {{ background: {ui.ACCENT if on else ui.CARD}; border-radius: 12px; }}"
+            f"ResCard:hover {{ background: {ui.ACCENT if on else ui.CARD_HI}; }}"
+            "QLabel { background: transparent; }")
+
+    def mousePressEvent(self, e):
+        self.on_click()
+
+
+# ---------- строка в списке процессов ----------
+class Row(QTreeWidgetItem):
+    """Строка с числовыми значениями для сортировки и подсветкой загрузки, как «тепловая карта»."""
+    def set_values(self, cpu, mem, disk, mem_total):
+        self.cpu, self.mem, self.disk = cpu, mem, disk
+        self.setText(1, f"{cpu:.1f} %")
+        self.setText(2, fmt_bytes(mem))
+        self.setText(3, fmt_bytes(disk, rate=True) if disk >= 1024 else "0 " + tr("MB/s", ru="МБ/с"))
+        for col, frac in ((1, cpu / 100), (2, mem / mem_total if mem_total else 0), (3, min(disk / 50e6, 1))):
+            a = int(25 + 150 * min(frac * 3, 1)) if frac > 0.003 else 0
+            self.setBackground(col, QColor(37, 99, 235, a) if a else QColor(0, 0, 0, 0))
+            self.setTextAlignment(col, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+
+
+# ---------- окно ----------
+class TaskManager(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle(tr("Task Manager", ru="Диспетчер задач"))
+        self.setWindowIcon(QIcon.fromTheme("utilities-system-monitor", QIcon(ui.LOGO)))
+        self.resize(980, 680)
+        self.by_id, self.by_exec = desktop_index()
+        self.prev_io = {}
+        self.prev_time = time.monotonic()
+        self.procs = {}                  # pid → psutil.Process (cpu_percent помнит прошлый замер)
+        self.expanded = set()
+        self.selected = None
+        self.groups = {}
+        self.cpu_now = 0.0
+
+        root = QVBoxLayout(self)
+        root.setContentsMargins(20, 16, 20, 16)
+        head, self.status = ui.header("taskmgr", tr("Task Manager", ru="Диспетчер задач"),
+                                      tr("What is running on your computer and how loaded it is",
+                                         ru="Что работает на компьютере и насколько он загружен"), 48)
+        root.addLayout(head)
+
+        self.tabs = QTabWidget()
+        self.tabs.addTab(self.processes_tab(), tr("Processes", ru="Процессы"))
+        self.tabs.addTab(self.performance_tab(), tr("Performance", ru="Производительность"))
+        self.tabs.addTab(self.startup_tab(), tr("Startup apps", ru="Автозагрузка"))
+        self.tabs.addTab(self.details_tab(), tr("About this PC", ru="О компьютере"))
+        root.addWidget(self.tabs)
+
+        psutil.cpu_percent(None)
+        self.prev_disk = psutil.disk_io_counters()
+        self.prev_net = psutil.net_io_counters()
+        self.timer = QTimer(self, interval=REFRESH_MS, timeout=self.refresh)
+        self.timer.start()
+        QTimer.singleShot(300, self.refresh)
+
+    # ===== Процессы =====
+    def processes_tab(self):
+        page = QWidget()
+        lay = QVBoxLayout(page)
+        lay.setContentsMargins(0, 8, 0, 0)
+        top = QHBoxLayout()
+        self.search = QLineEdit(placeholderText=tr("Search by name…", ru="Поиск по названию…"))
+        self.search.textChanged.connect(lambda _: self.refresh_processes(force=True))
+        top.addWidget(self.search, 1)
+        self.end_btn = QPushButton(tr("End task", ru="Снять задачу"))
+        self.end_btn.setEnabled(False)
+        self.end_btn.clicked.connect(self.end_task)
+        top.addWidget(self.end_btn)
+        lay.addLayout(top)
+
+        t = QTreeWidget()
+        t.setColumnCount(4)
+        t.setHeaderLabels([tr("Name", ru="Название"), tr("CPU", ru="ЦП"), tr("Memory", ru="Память"),
+                           tr("Disk", ru="Диск")])
+        t.setRootIsDecorated(True)
+        t.setUniformRowHeights(True)
+        t.setAlternatingRowColors(False)
+        t.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        h = t.header()
+        h.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        for c in (1, 2, 3):
+            h.setSectionResizeMode(c, QHeaderView.ResizeMode.Fixed)
+            t.setColumnWidth(c, 120)
+        h.setStretchLastSection(False)
+        h.setDefaultAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        for c in (1, 2, 3):
+            t.headerItem().setTextAlignment(c, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        t.setStyleSheet(f"""
+            QTreeWidget {{ background: {ui.CARD}; border: none; border-radius: 12px; padding: 6px; outline: none; }}
+            QTreeWidget::item {{ padding: 4px 2px; border: none; }}
+            QTreeWidget::item:selected {{ background: {ui.ACCENT}; color: white; }}
+            QTreeWidget::item:hover:!selected {{ background: {ui.CARD_HI}; }}
+            QHeaderView::section {{ background: {ui.CARD}; color: {ui.MUTED}; border: none;
+                                    border-bottom: 1px solid {ui.LINE}; padding: 6px 8px; font-weight: bold; }}
+        """)
+        t.itemSelectionChanged.connect(self.selection_changed)
+        t.itemExpanded.connect(lambda it: self.expanded.add(it.data(0, Qt.ItemDataRole.UserRole)))
+        t.itemCollapsed.connect(lambda it: self.expanded.discard(it.data(0, Qt.ItemDataRole.UserRole)))
+        t.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        t.customContextMenuRequested.connect(self.context_menu)
+        self.tree = t
+        lay.addWidget(t, 1)
+        return page
+
+    def collect(self):
+        """Снимок всех процессов, сгруппированных по программам."""
+        now = time.monotonic()
+        dt = max(now - self.prev_time, 0.5)
+        self.prev_time = now
+        seen = set()
+        groups = {}
+        for p in psutil.process_iter(["pid", "ppid", "name", "username", "uids", "cmdline", "exe"]):
+            info = p.info
+            pid = info["pid"]
+            if pid in (0, 1, 2) or info["ppid"] == 2 or not (info["cmdline"] or info["exe"]):
+                continue                                   # ядро и его служебные потоки не показываем
+            proc = self.procs.setdefault(pid, p)
+            seen.add(pid)
+            try:
+                cpu = proc.cpu_percent(None) / NCPU
+                mem = proc.memory_info().rss
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+            disk = 0.0
+            try:
+                io = proc.io_counters()
+                tot = io.read_bytes + io.write_bytes
+                if pid in self.prev_io:
+                    disk = max(0.0, (tot - self.prev_io[pid]) / dt)
+                self.prev_io[pid] = tot
+            except (psutil.AccessDenied, psutil.NoSuchProcess, AttributeError):
+                pass
+            uid = info["uids"].real if info["uids"] else -1
+            did = app_of(pid, self.by_id) if uid == ME else None
+            name = info["name"] or "?"
+            if did:
+                key, title, icon, kind = "app:" + did, self.by_id[did][0] or name, self.by_id[did][1], "app"
+            else:
+                key, title, icon, kind = "proc:" + name, name, "", "bg"
+                ex = self.by_exec.get(name.lower())
+                if ex and uid == ME:
+                    key, title, icon, kind = "app:" + name.lower(), ex[0] or name, ex[1], "app"
+            g = groups.setdefault(key, {"title": title, "icon": icon, "kind": kind, "procs": []})
+            g["procs"].append((pid, name, cpu, mem, disk, uid))
+        for pid in list(self.procs):
+            if pid not in seen:
+                self.procs.pop(pid, None)
+                self.prev_io.pop(pid, None)
+        return groups
+
+    def refresh_processes(self, force=False):
+        if not force:
+            self.groups = self.collect()
+        groups = self.groups
+        text = self.search.text().strip().lower()
+        mem_total = psutil.virtual_memory().total
+        t = self.tree
+        t.setUpdatesEnabled(False)
+        scroll = t.verticalScrollBar().value()
+        t.clear()
+        bold = QFont()
+        bold.setBold(True)
+        sections = {"app": [], "bg": []}
+        for key, g in groups.items():
+            if text and text not in g["title"].lower() and not any(text in p[1].lower() for p in g["procs"]):
+                continue
+            cpu = sum(p[2] for p in g["procs"])
+            mem = sum(p[3] for p in g["procs"])
+            disk = sum(p[4] for p in g["procs"])
+            sections[g["kind"]].append((cpu, mem, key, g, disk))
+        selected_item = None
+        for kind, label in (("app", tr("Apps", ru="Приложения")),
+                            ("bg", tr("Background processes", ru="Фоновые процессы"))):
+            rows = sorted(sections[kind], key=lambda r: (r[0], r[1]), reverse=True)
+            if not rows:
+                continue
+            sec = QTreeWidgetItem([f"{label} ({len(rows)})"])
+            sec.setFont(0, bold)
+            sec.setFlags(Qt.ItemFlag.ItemIsEnabled)
+            sec.setForeground(0, QColor(ui.ACCENT_HI))
+            t.addTopLevelItem(sec)
+            sec.setExpanded(True)
+            for cpu, mem, key, g, disk in rows:
+                n = len(g["procs"])
+                title = g["title"] + (f"  ({n})" if n > 1 else "")
+                it = Row([title])
+                it.setData(0, Qt.ItemDataRole.UserRole, key)
+                if g["icon"]:
+                    ic = QIcon(g["icon"]) if g["icon"].startswith("/") else QIcon.fromTheme(g["icon"])
+                    if not ic.isNull():
+                        it.setIcon(0, ic)
+                elif kind == "bg":
+                    it.setIcon(0, QIcon.fromTheme("application-x-executable"))
+                it.set_values(cpu, mem, disk, mem_total)
+                sec.addChild(it)
+                if n > 1:
+                    for pid, name, pcpu, pmem, pdisk, _uid in sorted(g["procs"], key=lambda x: -x[2]):
+                        c = Row([f"{name}   ·   PID {pid}"])
+                        c.setData(0, Qt.ItemDataRole.UserRole, f"pid:{pid}")
+                        c.set_values(pcpu, pmem, pdisk, mem_total)
+                        it.addChild(c)
+                    it.setExpanded(key in self.expanded)
+                if key == self.selected:
+                    selected_item = it
+                for i in range(it.childCount()):
+                    if it.child(i).data(0, Qt.ItemDataRole.UserRole) == self.selected:
+                        selected_item = it.child(i)
+        if selected_item:
+            t.blockSignals(True)
+            selected_item.setSelected(True)
+            t.setCurrentItem(selected_item)
+            t.blockSignals(False)
+        t.verticalScrollBar().setValue(scroll)
+        t.setUpdatesEnabled(True)
+        n_procs = sum(len(g["procs"]) for g in groups.values())
+        self.status.setText(tr("{n} processes · CPU {c:.0f} % · Memory {m:.0f} %",
+                               ru="Процессов: {n} · ЦП {c:.0f} % · Память {m:.0f} %").format(
+            n=n_procs, c=self.cpu_now, m=psutil.virtual_memory().percent))
+
+    def selection_changed(self):
+        items = self.tree.selectedItems()
+        key = items[0].data(0, Qt.ItemDataRole.UserRole) if items else None
+        self.selected = key
+        self.end_btn.setEnabled(bool(key))
+
+    def pids_of(self, key):
+        if not key:
+            return []
+        if key.startswith("pid:"):
+            return [int(key[4:])]
+        g = self.groups.get(key)
+        return [p[0] for p in g["procs"]] if g else []
+
+    def context_menu(self, pos):
+        it = self.tree.itemAt(pos)
+        if not it or not it.data(0, Qt.ItemDataRole.UserRole):
+            return
+        self.tree.setCurrentItem(it)
+        m = QMenu(self)
+        m.addAction(tr("End task", ru="Снять задачу"), self.end_task)
+        m.exec(self.tree.viewport().mapToGlobal(pos))
+
+    def end_task(self):
+        pids = self.pids_of(self.selected)
+        if not pids:
+            return
+        mine, foreign = [], []
+        for pid in pids:
+            try:
+                (mine if psutil.Process(pid).uids().real == ME else foreign).append(pid)
+            except psutil.NoSuchProcess:
+                pass
+        critical = {"plasmashell", "kwin_wayland", "kwin_x11", "systemd", "sddm", "Xwayland", "dbus-daemon",
+                    "pipewire", "wireplumber", "Hyprland"}
+        names = {self.procs[p].name() for p in pids if p in self.procs and self.procs[p].is_running()}
+        warn = ""
+        if names & critical:
+            warn = "\n\n" + tr("This is part of the system. Ending it may close the desktop or turn off sound.",
+                               ru="Это часть системы. Если её закрыть, может пропасть рабочий стол или звук.")
+        if foreign:
+            warn += "\n\n" + tr("Some processes belong to the system — a password will be asked.",
+                                ru="Часть процессов принадлежит системе — понадобится пароль.")
+        if warn and QMessageBox.question(
+                self, tr("Task Manager", ru="Диспетчер задач"),
+                tr("End this task?", ru="Снять задачу?") + warn) != QMessageBox.StandardButton.Yes:
+            return
+        for pid in mine:
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except OSError:
+                pass
+        if foreign:
+            subprocess.Popen(["pkexec", "kill", "-TERM"] + [str(p) for p in foreign])
+        # Через 3 секунды добиваем тех, кто не закрылся сам (как «Снять задачу» в Windows)
+        QTimer.singleShot(3000, lambda ps=list(mine): self.force_kill(ps))
+        self.status.setText(tr("Ending the task…", ru="Снимаю задачу…"))
+
+    def force_kill(self, pids):
+        for pid in pids:
+            try:
+                if psutil.pid_exists(pid):
+                    os.kill(pid, signal.SIGKILL)
+            except OSError:
+                pass
+        self.refresh()
+
+    # ===== Производительность =====
+    def performance_tab(self):
+        page = QWidget()
+        lay = QHBoxLayout(page)
+        lay.setContentsMargins(0, 8, 0, 0)
+        lay.setSpacing(14)
+        side = QVBoxLayout()
+        side.setSpacing(8)
+        self.stack = QStackedWidget()
+        self.res = {}
+        res_list = [("cpu", tr("CPU", ru="Процессор"), "#3b82f6"), ("mem", tr("Memory", ru="Память"), "#a78bfa"),
+                    ("disk", tr("Disk", ru="Диск"), "#22c55e"), ("net", tr("Network", ru="Сеть"), "#f59e0b")]
+        if self.gpu_busy_path():
+            res_list.append(("gpu", tr("GPU", ru="Видеокарта"), "#f472b6"))
+        for i, (key, name, color) in enumerate(res_list):
+            btn = ResCard(lambda n=i: self.show_res(n))
+            inner = QHBoxLayout(btn)
+            inner.setContentsMargins(10, 8, 12, 8)
+            inner.setSpacing(12)
+            mini = Graph(color, small=True)
+            mini.setFixedSize(64, 40)
+            mini.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+            inner.addWidget(mini)
+            texts = QVBoxLayout()
+            t1 = QLabel(f"<b>{name}</b>")
+            t2 = QLabel("—", objectName="desc")
+            for w in (t1, t2):
+                w.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+                w.setStyleSheet("background: transparent;")
+            texts.addWidget(t1)
+            texts.addWidget(t2)
+            inner.addLayout(texts, 1)
+            btn.setFixedWidth(260)
+            side.addWidget(btn)
+
+            panel = QWidget()
+            pl = QVBoxLayout(panel)
+            pl.setContentsMargins(0, 0, 0, 0)
+            title_row = QHBoxLayout()
+            title_row.addWidget(QLabel(name, objectName="title"))
+            sub = QLabel("", objectName="desc")
+            title_row.addStretch()
+            title_row.addWidget(sub)
+            pl.addLayout(title_row)
+            big = Graph(color)
+            pl.addWidget(big, 1)
+            pl.addWidget(QLabel(tr("Last 2 minutes", ru="Последние 2 минуты"), objectName="desc"))
+            grid = QGridLayout()
+            grid.setHorizontalSpacing(30)
+            grid.setVerticalSpacing(6)
+            pl.addLayout(grid)
+            self.stack.addWidget(panel)
+            self.res[key] = {"btn": btn, "mini": mini, "line": t2, "big": big, "sub": sub, "grid": grid, "cells": {}}
+        side.addStretch()
+        lay.addLayout(side)
+        lay.addWidget(self.stack, 1)
+        self.show_res(0)
+        self.res["cpu"]["sub"].setText(self.cpu_model())
+        return page
+
+    def show_res(self, n):
+        self.stack.setCurrentIndex(n)
+        for i, r in enumerate(self.res.values()):
+            r["btn"].set_checked(i == n)
+
+    def stat(self, key, name, value, pos):
+        cells = self.res[key]["cells"]
+        if name not in cells:
+            grid = self.res[key]["grid"]
+            cap = QLabel(name, objectName="desc")
+            val = QLabel()
+            val.setStyleSheet("font-size: 18px; font-weight: bold; background: transparent;")
+            r, c = divmod(pos, 3)
+            grid.addWidget(cap, r * 2, c)
+            grid.addWidget(val, r * 2 + 1, c)
+            cells[name] = val
+        cells[name].setText(value)
+
+    @staticmethod
+    def cpu_model():
+        try:
+            for line in open("/proc/cpuinfo"):
+                if line.startswith("model name"):
+                    return re.sub(r"\s+", " ", line.split(":", 1)[1].replace("(R)", "").replace("(TM)", "")).strip()
+        except OSError:
+            pass
+        return platform.processor()
+
+    @staticmethod
+    def gpu_busy_path():
+        for p in glob.glob("/sys/class/drm/card*/device/gpu_busy_percent"):
+            return p
+        return None
+
+    def refresh_performance(self):
+        cpu = self.cpu_now
+        r = self.res["cpu"]
+        r["mini"].push(cpu)
+        r["big"].push(cpu)
+        freq = psutil.cpu_freq()
+        r["line"].setText(f"{cpu:.0f} %" + (f"   {freq.current / 1000:.2f} GHz" if freq else ""))
+        self.stat("cpu", tr("Utilization", ru="Загрузка"), f"{cpu:.0f} %", 0)
+        if freq:
+            self.stat("cpu", tr("Speed", ru="Частота"), f"{freq.current / 1000:.2f} " + tr("GHz", ru="ГГц"), 1)
+        self.stat("cpu", tr("Cores", ru="Ядра"), f"{psutil.cpu_count(False) or NCPU} / {NCPU}", 2)
+        n_threads = 0
+        for p in self.procs.values():
+            try:
+                n_threads += p.num_threads()
+            except (psutil.Error, OSError):
+                pass
+        self.stat("cpu", tr("Processes", ru="Процессы"), str(len(self.procs)), 3)
+        self.stat("cpu", tr("Threads", ru="Потоки"), str(n_threads), 4)
+        self.stat("cpu", tr("Up time", ru="Время работы"), fmt_uptime(time.time() - psutil.boot_time()), 5)
+
+        vm = psutil.virtual_memory()
+        sw = psutil.swap_memory()
+        r = self.res["mem"]
+        r["mini"].push(vm.percent)
+        r["big"].push(vm.percent)
+        r["line"].setText(f"{fmt_bytes(vm.total - vm.available)} / {fmt_bytes(vm.total)} ({vm.percent:.0f} %)")
+        r["sub"].setText(fmt_bytes(vm.total))
+        self.stat("mem", tr("In use", ru="Используется"), fmt_bytes(vm.total - vm.available), 0)
+        self.stat("mem", tr("Available", ru="Доступно"), fmt_bytes(vm.available), 1)
+        self.stat("mem", tr("Cached", ru="Кэш"), fmt_bytes(getattr(vm, "cached", 0)), 2)
+        self.stat("mem", tr("Swap (zram)", ru="Подкачка (zram)"), f"{fmt_bytes(sw.used)} / {fmt_bytes(sw.total)}", 3)
+
+        dt = REFRESH_MS / 1000
+        d = psutil.disk_io_counters()
+        if d and self.prev_disk:
+            rd = max(0, d.read_bytes - self.prev_disk.read_bytes) / dt
+            wr = max(0, d.write_bytes - self.prev_disk.write_bytes) / dt
+            busy = min(100.0, max(0, getattr(d, "busy_time", 0) - getattr(self.prev_disk, "busy_time", 0))
+                       / (dt * 10)) if hasattr(d, "busy_time") else min(100.0, (rd + wr) / 2e6)
+            r = self.res["disk"]
+            r["mini"].push(busy)
+            r["big"].push(busy)
+            r["line"].setText(f"{busy:.0f} %")
+            self.stat("disk", tr("Active time", ru="Активность"), f"{busy:.0f} %", 0)
+            self.stat("disk", tr("Read", ru="Чтение"), fmt_bytes(rd, True), 1)
+            self.stat("disk", tr("Write", ru="Запись"), fmt_bytes(wr, True), 2)
+            try:
+                du = psutil.disk_usage("/")
+                self.stat("disk", tr("Free space", ru="Свободно"), f"{fmt_bytes(du.free)} / {fmt_bytes(du.total)}", 3)
+            except OSError:
+                pass
+        self.prev_disk = d
+
+        n = psutil.net_io_counters()
+        if n and self.prev_net:
+            up = max(0, n.bytes_sent - self.prev_net.bytes_sent) / dt
+            down = max(0, n.bytes_recv - self.prev_net.bytes_recv) / dt
+            # шкала графика: 100 % = 12,5 МБ/с (100 Мбит/с)
+            pct = min(100.0, (up + down) / 12.5e6 * 100)
+            r = self.res["net"]
+            r["mini"].push(pct)
+            r["big"].push(pct)
+            r["line"].setText(f"↓ {fmt_bytes(down, True)}   ↑ {fmt_bytes(up, True)}")
+            self.stat("net", tr("Receiving", ru="Получение"), fmt_bytes(down, True), 0)
+            self.stat("net", tr("Sending", ru="Отправка"), fmt_bytes(up, True), 1)
+            self.stat("net", tr("Received total", ru="Всего получено"), fmt_bytes(n.bytes_recv), 2)
+            self.stat("net", tr("Sent total", ru="Всего отправлено"), fmt_bytes(n.bytes_sent), 3)
+        self.prev_net = n
+
+        if "gpu" in self.res:
+            try:
+                g = float(open(self.gpu_busy_path()).read().strip())
+            except (OSError, ValueError, TypeError):
+                g = 0.0
+            r = self.res["gpu"]
+            r["mini"].push(g)
+            r["big"].push(g)
+            r["line"].setText(f"{g:.0f} %")
+            self.stat("gpu", tr("Utilization", ru="Загрузка"), f"{g:.0f} %", 0)
+
+    # ===== Автозагрузка =====
+    HIDDEN_STARTUP = ("geos-", "polkit", "at-spi", "xdg-user-dirs", "pulseaudio", "pipewire", "gnome-keyring",
+                      "org.kde.plasmashell", "baloo", "kaccess", "geoclue", "print-applet", "spice-vdagent",
+                      "vboxclient", "org.kde.kgpg")
+
+    def startup_entries(self):
+        user_dir = os.path.expanduser("~/.config/autostart")
+        files = {}
+        for d in ("/etc/xdg/autostart", user_dir):
+            for path in glob.glob(os.path.join(d, "*.desktop")):
+                files[os.path.basename(path)] = path            # файл пользователя важнее системного
+        lang = os.environ.get("LANG", "en")[:2]
+        out = []
+        for fname, path in sorted(files.items()):
+            if fname.lower().startswith(self.HIDDEN_STARTUP):
+                continue
+            cp = configparser.RawConfigParser(strict=False, interpolation=None)
+            cp.optionxform = str
+            try:
+                cp.read(path, encoding="utf-8")
+                e = cp["Desktop Entry"]
+            except (configparser.Error, KeyError, UnicodeDecodeError):
+                continue
+            if e.get("X-KDE-autostart-phase") or e.get("X-GNOME-AutostartPhase"):
+                continue                                         # части самой системы — не трогаем
+            only = e.get("OnlyShowIn", "")
+            if (only and "KDE" not in only) or "KDE" in e.get("NotShowIn", ""):
+                continue
+            if e.get("NoDisplay", "false").lower() == "true" and not path.startswith(user_dir):
+                continue
+            name = e.get(f"Name[{lang}]") or e.get("Name") or fname[:-8]
+            enabled = e.get("Hidden", "false").lower() != "true" and \
+                e.get("X-GNOME-Autostart-enabled", "true").lower() != "false"
+            out.append((fname, name, e.get("Icon", ""), e.get(f"Comment[{lang}]") or e.get("Comment", ""), enabled))
+        return out
+
+    def startup_tab(self):
+        page = QWidget()
+        self.startup_layout = QVBoxLayout(page)
+        self.startup_layout.setContentsMargins(0, 8, 0, 0)
+        self.startup_layout.addWidget(QLabel(
+            tr("Apps that start automatically when you sign in. Turning off unneeded ones speeds up startup.",
+               ru="Программы, которые запускаются сами при входе. Если выключить ненужные, система загрузится быстрее."),
+            objectName="desc", wordWrap=True))
+        self.startup_host = QWidget()
+        self.startup_list = QVBoxLayout(self.startup_host)
+        self.startup_list.setSpacing(8)
+        s = QScrollArea()
+        s.setWidgetResizable(True)
+        s.setWidget(self.startup_host)
+        self.startup_layout.addWidget(s, 1)
+        self.fill_startup()
+        return page
+
+    def fill_startup(self):
+        while self.startup_list.count():
+            w = self.startup_list.takeAt(0).widget()
+            if w:
+                w.setParent(None)
+        entries = self.startup_entries()
+        if not entries:
+            self.startup_list.addWidget(QLabel(tr("No startup apps.", ru="Нет программ в автозагрузке."),
+                                               objectName="desc"))
+        for fname, name, icon, comment, enabled in entries:
+            row = QFrame(objectName="card")
+            hl = QHBoxLayout(row)
+            hl.setContentsMargins(14, 10, 14, 10)
+            ic = QLabel(objectName="icon")
+            qi = QIcon(icon) if icon.startswith("/") else QIcon.fromTheme(icon or "application-x-executable")
+            ic.setPixmap(qi.pixmap(32, 32))
+            hl.addWidget(ic)
+            texts = QVBoxLayout()
+            texts.addWidget(QLabel(name, objectName="name"))
+            if comment:
+                texts.addWidget(QLabel(comment, objectName="desc"))
+            hl.addLayout(texts, 1)
+            state = QLabel(tr("Enabled", ru="Включено") if enabled else tr("Disabled", ru="Выключено"),
+                           objectName="desc")
+            hl.addWidget(state)
+            btn = QPushButton(tr("Disable", ru="Выключить") if enabled else tr("Enable", ru="Включить"))
+            if not enabled:
+                btn.setObjectName("open")
+            btn.clicked.connect(lambda _, f=fname, en=enabled: self.set_startup(f, not en))
+            hl.addWidget(btn)
+            self.startup_list.addWidget(row)
+        self.startup_list.addStretch()
+
+    def set_startup(self, fname, enable):
+        """Как в KDE: копия ярлыка в ~/.config/autostart с Hidden=true выключает автозапуск."""
+        user_dir = os.path.expanduser("~/.config/autostart")
+        os.makedirs(user_dir, exist_ok=True)
+        dst = os.path.join(user_dir, fname)
+        src = dst if os.path.exists(dst) else os.path.join("/etc/xdg/autostart", fname)
+        try:
+            lines = open(src, encoding="utf-8").read().splitlines()
+        except OSError:
+            return
+        lines = [ln for ln in lines if not ln.startswith(("Hidden=", "X-GNOME-Autostart-enabled="))]
+        out = []
+        for ln in lines:
+            out.append(ln)
+            if ln.strip() == "[Desktop Entry]":
+                out.append("Hidden=" + ("false" if enable else "true"))
+        with open(dst, "w", encoding="utf-8") as f:
+            f.write("\n".join(out) + "\n")
+        self.fill_startup()
+
+    # ===== О компьютере =====
+    def details_tab(self):
+        page = QWidget()
+        grid = QGridLayout(page)
+        grid.setContentsMargins(4, 16, 4, 4)
+        grid.setHorizontalSpacing(30)
+        grid.setVerticalSpacing(14)
+        os_name = "GeOS"
+        try:
+            for line in open("/etc/os-release"):
+                if line.startswith("PRETTY_NAME="):
+                    os_name = line.split("=", 1)[1].strip().strip('"')
+        except OSError:
+            pass
+        gpu = ""
+        try:
+            out = subprocess.run(["lspci"], capture_output=True, text=True, timeout=3).stdout
+            gpus = [ln.split(": ", 1)[1] for ln in out.splitlines() if " VGA " in ln or "3D controller" in ln]
+            gpu = "\n".join(gpus)
+        except (OSError, subprocess.SubprocessError):
+            pass
+        try:
+            du = psutil.disk_usage("/")
+            disk = tr("{free} free of {total}", ru="Свободно {free} из {total}").format(
+                free=fmt_bytes(du.free), total=fmt_bytes(du.total))
+        except OSError:
+            disk = "—"
+        rows = [
+            (tr("Computer name", ru="Имя компьютера"), socket.gethostname()),
+            (tr("System", ru="Система"), os_name),
+            (tr("Processor", ru="Процессор"), f"{self.cpu_model()}  ({NCPU} " + tr("threads", ru="потоков") + ")"),
+            (tr("Memory", ru="Память"), fmt_bytes(psutil.virtual_memory().total)),
+            (tr("Graphics", ru="Видеокарта"), gpu or "—"),
+            (tr("Disk", ru="Диск"), disk),
+            (tr("Linux kernel", ru="Ядро Linux"), platform.release()),
+        ]
+        for i, (k, v) in enumerate(rows):
+            cap = QLabel(k, objectName="desc")
+            val = QLabel(v)
+            val.setWordWrap(True)
+            val.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+            val.setStyleSheet("font-size: 15px; background: transparent;")
+            grid.addWidget(cap, i, 0, Qt.AlignmentFlag.AlignTop)
+            grid.addWidget(val, i, 1)
+        grid.setColumnStretch(1, 1)
+        grid.setRowStretch(len(rows), 1)
+        more = QPushButton(tr("Detailed system monitor", ru="Подробный системный монитор"), objectName="flat")
+        more.clicked.connect(lambda: subprocess.Popen(["plasma-systemmonitor"]) if os.path.exists(
+            "/usr/bin/plasma-systemmonitor") else None)
+        grid.addWidget(more, len(rows) + 1, 0, 1, 2, Qt.AlignmentFlag.AlignLeft)
+        return page
+
+    # ===== обновление =====
+    def refresh(self):
+        self.cpu_now = psutil.cpu_percent(None)
+        idx = self.tabs.currentIndex()
+        if idx == 0:
+            self.refresh_processes()
+        else:
+            self.groups = self.collect()        # чтобы «Снять задачу» и счётчики были свежими
+        self.refresh_performance()
+
+
+def main():
+    app = QApplication(sys.argv)
+    ui.apply(app, "geos-taskmgr")
+    lock = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "geos-taskmgr.pid")
+    try:  # второй запуск (повторное Ctrl+Shift+Esc) — не плодим окна
+        old = int(open(lock).read())
+        if psutil.pid_exists(old) and "geos-taskmgr" in " ".join(psutil.Process(old).cmdline()):
+            return 0
+    except (OSError, ValueError, psutil.Error):
+        pass
+    try:
+        open(lock, "w").write(str(os.getpid()))
+    except OSError:
+        pass
+    w = TaskManager()
+    w.show()
+    return app.exec()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Task Manager
+Name[ru]=Диспетчер задач
+Comment=Running apps, performance and startup apps
+Comment[ru]=Запущенные программы, производительность и автозагрузка
+Exec=/usr/local/bin/geos-taskmgr
+Icon=/usr/share/geos/icons/taskmgr.svg
+Categories=System;Monitor;
+Keywords=processes;cpu;memory;kill;end task;
+Keywords[ru]=processes;cpu;memory;kill;процессы;процессор;память;снять задачу;
